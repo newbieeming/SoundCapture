@@ -19,4 +19,13 @@
 - Coroutines
 - DataStore
 
+## 界面预览
+
+### 主页
+
+![主页](docs/images/home.png)
+
+### 配置
+
+![配置](docs/images/config.png)
 
