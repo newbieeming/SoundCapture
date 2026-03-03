@@ -1,0 +1,51 @@
+<resources>
+    <string name="app_name">SoundCapture</string>
+    <string name="title_recording_app">Recording App</string>
+    <string name="section_recordings">Recordings</string>
+    <string name="section_recordings_with_path">Recordings (%1$s)</string>
+
+    <string name="btn_start_recording">Start Recording</string>
+    <string name="btn_stop_recording">Stop Recording</string>
+    <string name="btn_confirm">Confirm</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <string name="cd_settings">Settings</string>
+    <string name="cd_rename">Rename</string>
+    <string name="cd_delete">Delete</string>
+
+    <string name="dialog_recording_config_title">Recording Config</string>
+    <string name="dialog_rename_recording_title">Rename Recording</string>
+    <string name="label_new_name">New Name</string>
+    <string name="label_audio_source">Audio Source</string>
+    <string name="label_sample_rate">Sample Rate</string>
+    <string name="label_channel_config">Channel Config</string>
+    <string name="label_audio_channel_count">Audio Channel Count</string>
+    <string name="label_display_scale">Display Scale</string>
+    <string name="label_unknown">Unknown</string>
+
+    <string name="audio_source_default">DEFAULT</string>
+    <string name="audio_source_mic">MIC</string>
+    <string name="audio_source_voice_uplink">VOICE_UPLINK</string>
+    <string name="audio_source_voice_downlink">VOICE_DOWNLINK</string>
+    <string name="audio_source_voice_call">VOICE_CALL</string>
+    <string name="audio_source_camcorder">CAMCORDER</string>
+    <string name="audio_source_voice_recognition">VOICE_RECOGNITION</string>
+    <string name="audio_source_voice_communication">VOICE_COMMUNICATION</string>
+    <string name="audio_source_remote_submix">REMOTE_SUBMIX</string>
+    <string name="audio_source_unprocessed">UNPROCESSED</string>
+    <string name="audio_source_voice_performance">VOICE_PERFORMANCE</string>
+
+    <string name="channel_config_mono">CHANNEL_IN_MONO</string>
+    <string name="channel_config_stereo">CHANNEL_IN_STEREO</string>
+
+    <string name="format_rate_hz">%1$d Hz</string>
+    <string name="format_scale">x%1$s</string>
+    <string name="msg_saved_in_folder">Saved in %1$s folder</string>
+    <string name="msg_grant_all_files_access">Please grant \"All files access\" first</string>
+
+    <string name="msg_recording_failed">Recording failed</string>
+    <string name="msg_delete_success">Delete successful</string>
+    <string name="msg_delete_failed">Delete failed</string>
+    <string name="msg_rename_success">Rename successful</string>
+    <string name="msg_rename_failed">Rename failed</string>
+</resources>

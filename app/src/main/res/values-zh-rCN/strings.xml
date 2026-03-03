@@ -1,0 +1,39 @@
+<resources>
+    <string name="app_name">SoundCapture</string>
+    <string name="title_recording_app">录音应用</string>
+    <string name="section_recordings">录音列表</string>
+    <string name="section_recordings_with_path">录音列表（%1$s）</string>
+
+    <string name="btn_start_recording">开始录音</string>
+    <string name="btn_stop_recording">停止录音</string>
+    <string name="btn_confirm">确定</string>
+    <string name="btn_cancel">取消</string>
+
+    <string name="cd_settings">配置</string>
+    <string name="cd_rename">重命名</string>
+    <string name="cd_delete">删除</string>
+
+    <string name="dialog_recording_config_title">录音配置</string>
+    <string name="dialog_rename_recording_title">重命名录音</string>
+    <string name="label_new_name">新名称</string>
+    <string name="label_audio_source">音频源</string>
+    <string name="label_sample_rate">采样率</string>
+    <string name="label_channel_config">声道配置</string>
+    <string name="label_audio_channel_count">音频通道数</string>
+    <string name="label_display_scale">显示倍率</string>
+    <string name="label_unknown">未知</string>
+
+    <string name="channel_config_mono">单声道</string>
+    <string name="channel_config_stereo">立体声</string>
+
+    <string name="format_rate_hz">%1$d Hz</string>
+    <string name="format_scale">x%1$s</string>
+    <string name="msg_saved_in_folder">保存在%1$s文件夹中</string>
+    <string name="msg_grant_all_files_access">请先授予“所有文件访问权限”</string>
+
+    <string name="msg_recording_failed">录音失败</string>
+    <string name="msg_delete_success">删除成功</string>
+    <string name="msg_delete_failed">删除失败</string>
+    <string name="msg_rename_success">重命名成功</string>
+    <string name="msg_rename_failed">重命名失败</string>
+</resources>
