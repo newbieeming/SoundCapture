@@ -23,9 +23,6 @@
     <string name="label_display_scale">显示倍率</string>
     <string name="label_unknown">未知</string>
 
-    <string name="channel_config_mono">单声道</string>
-    <string name="channel_config_stereo">立体声</string>
-
     <string name="format_rate_hz">%1$d Hz</string>
     <string name="format_scale">x%1$s</string>
     <string name="msg_saved_in_folder">保存在%1$s文件夹中</string>

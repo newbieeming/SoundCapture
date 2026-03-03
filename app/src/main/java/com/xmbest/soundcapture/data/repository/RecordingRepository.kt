@@ -3,6 +3,7 @@ package com.xmbest.soundcapture.data.repository
 import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.MediaRecorder
+import com.xmbest.soundcapture.data.model.AudioFormatExt
 import com.xmbest.soundcapture.data.model.RecordingConfig
 import com.xmbest.soundcapture.data.model.RecordingItem
 import kotlinx.coroutines.flow.Flow
@@ -120,8 +121,24 @@ class RecordingRepository @Inject constructor() {
 
     private fun channelConfigToken(channelConfig: Int): String {
         return when (channelConfig) {
-            AudioFormat.CHANNEL_IN_MONO -> "mono"
-            AudioFormat.CHANNEL_IN_STEREO -> "stereo"
+            AudioFormat.CHANNEL_IN_DEFAULT -> "DEFAULT"
+            AudioFormat.CHANNEL_IN_MONO -> "MONO"
+            AudioFormat.CHANNEL_IN_STEREO -> "STEREO"
+            AudioFormat.CHANNEL_IN_LEFT -> "LEFT"
+            AudioFormat.CHANNEL_IN_RIGHT -> "RIGHT"
+            AudioFormat.CHANNEL_IN_BACK -> "BACK"
+            AudioFormatExt.CHANNEL_IN_BACK_LEFT -> "BACK_LEFT"
+            AudioFormatExt.CHANNEL_IN_BACK_RIGHT -> "BACK_RIGHT"
+            AudioFormatExt.CHANNEL_IN_CENTER -> "CENTER"
+            AudioFormatExt.CHANNEL_IN_LOW_FREQUENCY -> "LOW_FREQUENCY"
+            AudioFormatExt.CHANNEL_IN_TOP_LEFT -> "TOP_LEFT"
+            AudioFormatExt.CHANNEL_IN_TOP_RIGHT -> "TOP_RIGHT"
+            AudioFormatExt.CHANNEL_IN_2POINT0POINT2 -> "2POINT0POINT2"
+            AudioFormatExt.CHANNEL_IN_2POINT1POINT2 -> "2POINT1POINT2"
+            AudioFormatExt.CHANNEL_IN_3POINT0POINT2 -> "3POINT0POINT2"
+            AudioFormatExt.CHANNEL_IN_3POINT1POINT2 -> "3POINT1POINT2"
+            AudioFormatExt.CHANNEL_IN_5POINT1 -> "5POINT1"
+            AudioFormatExt.CHANNEL_IN_FRONT_BACK -> "FRONT_BACK"
             else -> "c$channelConfig"
         }
     }

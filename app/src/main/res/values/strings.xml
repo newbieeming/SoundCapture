@@ -23,21 +23,6 @@
     <string name="label_display_scale">Display Scale</string>
     <string name="label_unknown">Unknown</string>
 
-    <string name="audio_source_default">DEFAULT</string>
-    <string name="audio_source_mic">MIC</string>
-    <string name="audio_source_voice_uplink">VOICE_UPLINK</string>
-    <string name="audio_source_voice_downlink">VOICE_DOWNLINK</string>
-    <string name="audio_source_voice_call">VOICE_CALL</string>
-    <string name="audio_source_camcorder">CAMCORDER</string>
-    <string name="audio_source_voice_recognition">VOICE_RECOGNITION</string>
-    <string name="audio_source_voice_communication">VOICE_COMMUNICATION</string>
-    <string name="audio_source_remote_submix">REMOTE_SUBMIX</string>
-    <string name="audio_source_unprocessed">UNPROCESSED</string>
-    <string name="audio_source_voice_performance">VOICE_PERFORMANCE</string>
-
-    <string name="channel_config_mono">CHANNEL_IN_MONO</string>
-    <string name="channel_config_stereo">CHANNEL_IN_STEREO</string>
-
     <string name="format_rate_hz">%1$d Hz</string>
     <string name="format_scale">x%1$s</string>
     <string name="msg_saved_in_folder">Saved in %1$s folder</string>
