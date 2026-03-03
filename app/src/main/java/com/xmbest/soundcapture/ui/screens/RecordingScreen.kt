@@ -4,7 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,11 +39,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -57,7 +60,6 @@ import com.xmbest.soundcapture.ui.components.ConfigDialog
 import com.xmbest.soundcapture.ui.components.RecordingListItem
 import com.xmbest.soundcapture.ui.components.WaveformView
 import kotlinx.coroutines.launch
-import androidx.core.net.toUri
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +67,9 @@ fun RecordingScreen(
     viewModel: RecordingViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val panelWeight = if (isLandscape) 0.6f else 0.36f
+    val listWeight = if (isLandscape) 0.4f else 0.64f
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showConfigDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -105,6 +110,9 @@ fun RecordingScreen(
                 .padding(padding)
         ) {
             RecordingPanel(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(panelWeight),
                 state = state,
                 onStart = {
                     if (!permissionsState.allPermissionsGranted) {
@@ -125,6 +133,9 @@ fun RecordingScreen(
                 onStop = { viewModel.handleIntent(RecordingIntent.StopRecording) }
             )
             RecordingList(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(listWeight),
                 state = state,
                 onDelete = { id -> viewModel.handleIntent(RecordingIntent.DeleteRecording(id)) },
                 onRename = { id, name ->
@@ -195,22 +206,28 @@ private fun ObserveEffects(
 
 @Composable
 private fun RecordingPanel(
+    modifier: Modifier = Modifier,
     state: RecordingState,
     onStart: () -> Unit,
     onStop: () -> Unit
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             WaveformView(
                 channelLevels = state.channelLevels,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 96.dp)
+                    .weight(1f),
                 maxBars = 100,
                 barWidth = 2.dp,
                 barGap = 4.dp,
@@ -219,7 +236,7 @@ private fun RecordingPanel(
                 channelCount = state.config.waveformChannelCount,
                 isActive = state.isRecording
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             RecordingControlButton(
                 isRecording = state.isRecording,
                 onStart = onStart,
@@ -236,34 +253,41 @@ private fun RecordingControlButton(
     onStop: () -> Unit
 ) {
     if (isRecording) {
-        Button(onClick = onStop) { Text(stringResource(id = R.string.btn_stop_recording)) }
+        Button(
+            onClick = onStop,
+        ) { Text(stringResource(id = R.string.btn_stop_recording)) }
     } else {
-        Button(onClick = onStart) { Text(stringResource(id = R.string.btn_start_recording)) }
+        Button(
+            onClick = onStart,
+        ) { Text(stringResource(id = R.string.btn_start_recording)) }
     }
 }
 
 @SuppressLint("SdCardPath")
 @Composable
 private fun RecordingList(
+    modifier: Modifier = Modifier,
     state: RecordingState,
     onDelete: (String) -> Unit,
     onRename: (String, String) -> Unit
 ) {
-    Text(
-        text = stringResource(
-            id = R.string.section_recordings_with_path,
-            "/sdcard/SoundCapture"
-        ),
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.padding(16.dp)
-    )
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(state.recordings) { recording ->
-            RecordingListItem(
-                recording = recording,
-                onDelete = { onDelete(recording.id) },
-                onRename = { newName -> onRename(recording.id, newName) }
-            )
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(
+                id = R.string.section_recordings_with_path,
+                "/sdcard/SoundCapture"
+            ),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(16.dp)
+        )
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(state.recordings) { recording ->
+                RecordingListItem(
+                    recording = recording,
+                    onDelete = { onDelete(recording.id) },
+                    onRename = { newName -> onRename(recording.id, newName) }
+                )
+            }
         }
     }
 }

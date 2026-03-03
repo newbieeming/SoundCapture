@@ -1,20 +1,16 @@
 package com.xmbest.soundcapture.ui.components
-
-import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
@@ -47,8 +43,6 @@ fun WaveformView(
 ) {
     val channelSamples = remember { mutableStateListOf<MutableList<Float>>() }
     val offset = remember { Animatable(0f) }
-    val waveformHeight = LocalConfiguration.current.screenHeightDp.dp * 0.36f
-    Log.d("WaveformView","waveformHeight : $waveformHeight")
     val density = LocalDensity.current
     val spacing = with(density) { (barWidth + barGap).toPx() }
     val barWidthPx = with(density) { barWidth.toPx() }
@@ -81,8 +75,7 @@ fun WaveformView(
 
     Canvas(
         modifier = modifier
-            .fillMaxWidth()
-            .height(waveformHeight)
+            .fillMaxSize()
     ) {
         drawWaveformBars(
             channelSamples = channelSamples,
