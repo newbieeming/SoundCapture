@@ -18,7 +18,6 @@ ksp = "2.0.21-1.0.28"
 compileSdk = "36"
 minSdk = "24"
 targetSdk = "36"
-app="1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
