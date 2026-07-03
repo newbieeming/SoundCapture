@@ -49,7 +49,7 @@ fun WaveformView(
 
         val safeChannelCount = channelCount.coerceIn(1, 8)
         while (channelSamples.size < safeChannelCount) {
-            channelSamples.add(mutableStateListOf<Float>())
+            channelSamples.add(mutableStateListOf())
         }
         while (channelSamples.size > safeChannelCount) {
             channelSamples.removeAt(channelSamples.lastIndex)

@@ -3,6 +3,7 @@ package com.newbieeming.soundcapture.ui.components
 import android.media.AudioFormat
 import android.media.MediaRecorder
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -134,18 +135,18 @@ fun ChannelConfigDropdown(
         AudioFormat.CHANNEL_IN_LEFT to "CHANNEL_IN_LEFT",
         AudioFormat.CHANNEL_IN_RIGHT to "CHANNEL_IN_RIGHT",
         AudioFormat.CHANNEL_IN_BACK to "CHANNEL_IN_BACK",
-        AudioFormatExt.Companion.CHANNEL_IN_BACK_LEFT to "CHANNEL_IN_BACK_LEFT",
-        AudioFormatExt.Companion.CHANNEL_IN_BACK_RIGHT to "CHANNEL_IN_BACK_RIGHT",
-        AudioFormatExt.Companion.CHANNEL_IN_CENTER to "CHANNEL_IN_CENTER",
-        AudioFormatExt.Companion.CHANNEL_IN_LOW_FREQUENCY to "CHANNEL_IN_LOW_FREQUENCY",
-        AudioFormatExt.Companion.CHANNEL_IN_TOP_LEFT to "CHANNEL_IN_TOP_LEFT",
-        AudioFormatExt.Companion.CHANNEL_IN_TOP_RIGHT to "CHANNEL_IN_TOP_RIGHT",
-        AudioFormatExt.Companion.CHANNEL_IN_2POINT0POINT2 to "CHANNEL_IN_2POINT0POINT2",
-        AudioFormatExt.Companion.CHANNEL_IN_2POINT1POINT2 to "CHANNEL_IN_2POINT1POINT2",
-        AudioFormatExt.Companion.CHANNEL_IN_3POINT0POINT2 to "CHANNEL_IN_3POINT0POINT2",
-        AudioFormatExt.Companion.CHANNEL_IN_3POINT1POINT2 to "CHANNEL_IN_3POINT1POINT2",
-        AudioFormatExt.Companion.CHANNEL_IN_5POINT1 to "CHANNEL_IN_5POINT1",
-        AudioFormatExt.Companion.CHANNEL_IN_FRONT_BACK to "CHANNEL_IN_FRONT_BACK",
+        AudioFormatExt.CHANNEL_IN_BACK_LEFT to "CHANNEL_IN_BACK_LEFT",
+        AudioFormatExt.CHANNEL_IN_BACK_RIGHT to "CHANNEL_IN_BACK_RIGHT",
+        AudioFormatExt.CHANNEL_IN_CENTER to "CHANNEL_IN_CENTER",
+        AudioFormatExt.CHANNEL_IN_LOW_FREQUENCY to "CHANNEL_IN_LOW_FREQUENCY",
+        AudioFormatExt.CHANNEL_IN_TOP_LEFT to "CHANNEL_IN_TOP_LEFT",
+        AudioFormatExt.CHANNEL_IN_TOP_RIGHT to "CHANNEL_IN_TOP_RIGHT",
+        AudioFormatExt.CHANNEL_IN_2POINT0POINT2 to "CHANNEL_IN_2POINT0POINT2",
+        AudioFormatExt.CHANNEL_IN_2POINT1POINT2 to "CHANNEL_IN_2POINT1POINT2",
+        AudioFormatExt.CHANNEL_IN_3POINT0POINT2 to "CHANNEL_IN_3POINT0POINT2",
+        AudioFormatExt.CHANNEL_IN_3POINT1POINT2 to "CHANNEL_IN_3POINT1POINT2",
+        AudioFormatExt.CHANNEL_IN_5POINT1 to "CHANNEL_IN_5POINT1",
+        AudioFormatExt.CHANNEL_IN_FRONT_BACK to "CHANNEL_IN_FRONT_BACK",
     )
 
     ExposedDropdownMenuBox(
@@ -207,6 +208,51 @@ fun WaveformChannelDropdown(
             channels.forEach { value ->
                 DropdownMenuItem(
                     text = { Text("$value") },
+                    onClick = {
+                        onSelect(value)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.S)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AudioFormatDropdown(
+    selected: Int,
+    onSelect: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val formats = mapOf(
+        AudioFormat.ENCODING_PCM_8BIT to "8BIT",
+        AudioFormat.ENCODING_PCM_16BIT to "16BIT",
+        AudioFormat.ENCODING_PCM_32BIT to "32BIT",
+        AudioFormat.ENCODING_PCM_FLOAT to "FLOAT"
+    )
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it }
+    ) {
+        OutlinedTextField(
+            value = formats[selected] ?: stringResource(id = R.string.label_unknown),
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            formats.forEach { (value, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
                     onClick = {
                         onSelect(value)
                         expanded = false

@@ -9,12 +9,11 @@
     <string name="cd_settings">配置</string>
 
     <string name="dialog_recording_config_title">录音配置</string>
-    <string name="dialog_rename_recording_title">重命名录音</string>
-    <string name="label_new_name">新名称</string>
     <string name="label_audio_source">音频源</string>
     <string name="label_sample_rate">采样率</string>
     <string name="label_channel_config">声道配置</string>
-    <string name="label_audio_channel_count">通道数</string>
+    <string name="label_audio_channel_count">声道数</string>
+    <string name="label_audio_format">编码</string>
     <string name="label_unknown">未知</string>
 
     <string name="format_rate_hz">%1$d Hz</string>

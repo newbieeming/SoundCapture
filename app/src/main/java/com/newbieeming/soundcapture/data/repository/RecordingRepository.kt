@@ -37,8 +37,9 @@ class RecordingRepository @Inject constructor() {
         val channelCountToken = "${config.waveformChannelCount.coerceIn(1, 8)}CH"
         val sourceToken = audioSourceToken(config.audioSource)
         val channelConfigToken = channelConfigToken(config.channelConfig)
+        val audioFormatToken = audioFormatToken(config.audioFormat)
         val timeToken = SimpleDateFormat("yyMMddHHmmss", Locale.getDefault()).format(Date())
-        return "${sampleRateToken}_${channelCountToken}_${sourceToken}_${channelConfigToken}_${timeToken}"
+        return "${sampleRateToken}_${channelCountToken}_${sourceToken}_${channelConfigToken}_${audioFormatToken}_${timeToken}"
     }
 
     private fun uniqueRecordingFile(baseName: String): File {
@@ -88,6 +89,16 @@ class RecordingRepository @Inject constructor() {
             AudioFormatExt.CHANNEL_IN_5POINT1 -> "5POINT1"
             AudioFormatExt.CHANNEL_IN_FRONT_BACK -> "FRONT_BACK"
             else -> "C$channelConfig"
+        }
+    }
+
+    private fun audioFormatToken(audioFormat: Int): String {
+        return when (audioFormat) {
+            AudioFormat.ENCODING_PCM_8BIT -> "8BIT"
+            AudioFormat.ENCODING_PCM_16BIT -> "16BIT"
+            AudioFormat.ENCODING_PCM_32BIT -> "32BIT"
+            AudioFormat.ENCODING_PCM_FLOAT -> "FLOAT"
+            else -> "F$audioFormat"
         }
     }
 }

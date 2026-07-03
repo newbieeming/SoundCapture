@@ -2,6 +2,7 @@ package com.newbieeming.soundcapture.domain
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.media.AudioFormat
 import android.media.AudioRecord
 import androidx.annotation.RequiresPermission
 import com.newbieeming.soundcapture.data.model.RecordingConfig
@@ -10,6 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import javax.inject.Inject
 import kotlin.math.abs
 
@@ -21,9 +24,9 @@ class AudioRecorder @Inject constructor() {
     @SuppressLint("MissingPermission")
     fun startRecording(config: RecordingConfig, outputFile: File): Flow<RecordingData> = flow {
         val bufferSizeInBytes = resolveBufferSize(config)
-        val bufferSizeInShorts = (bufferSizeInBytes / 2).coerceAtLeast(1)
+        val bytesPerSample = bytesPerSample(config.audioFormat)
         val recorder = createAudioRecord(config, bufferSizeInBytes)
-        val buffer = ShortArray(bufferSizeInShorts)
+        val buffer = ByteArray(bufferSizeInBytes)
 
         audioRecord = recorder
         recorder.startRecording()
@@ -39,6 +42,8 @@ class AudioRecorder @Inject constructor() {
                 readAndEmitFrame(
                     recorder = recorder,
                     buffer = buffer,
+                    bytesPerSample = bytesPerSample,
+                    audioFormat = config.audioFormat,
                     channelSize = config.waveformChannelCount.coerceIn(1, 8),
                     outputStream = outputStream,
                     onData = { emit(it) }
@@ -74,6 +79,15 @@ class AudioRecorder @Inject constructor() {
         return bufferSizeInBytes
     }
 
+    private fun bytesPerSample(audioFormat: Int): Int {
+        return when (audioFormat) {
+            AudioFormat.ENCODING_PCM_8BIT -> 1
+            AudioFormat.ENCODING_PCM_16BIT -> 2
+            AudioFormat.ENCODING_PCM_FLOAT -> 4
+            else -> 2
+        }
+    }
+
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     private fun createAudioRecord(config: RecordingConfig, bufferSizeInBytes: Int): AudioRecord {
         val recorder = AudioRecord(
@@ -92,72 +106,81 @@ class AudioRecorder @Inject constructor() {
 
     private suspend fun readAndEmitFrame(
         recorder: AudioRecord,
-        buffer: ShortArray,
+        buffer: ByteArray,
+        bytesPerSample: Int,
+        audioFormat: Int,
         channelSize: Int,
         outputStream: FileOutputStream,
         onData: suspend (RecordingData) -> Unit
     ) {
-        // 每次只读一小块，提高波形更新频率
-        val chunkSize = minOf(buffer.size, 512)
-        val readSize = recorder.read(buffer, 0, chunkSize)
-        if (readSize <= 0) {
+        val chunkBytes = minOf(buffer.size, 512 * bytesPerSample)
+        val readBytes = recorder.read(buffer, 0, chunkBytes)
+        if (readBytes <= 0) {
             delay(5)
             return
         }
-        outputStream.write(toPcmBytes(buffer, readSize))
+        outputStream.write(buffer, 0, readBytes)
         onData(
             RecordingData(
                 channelLevels = channelLevels(
                     data = buffer,
-                    length = readSize,
+                    bytesRead = readBytes,
+                    bytesPerSample = bytesPerSample,
+                    audioFormat = audioFormat,
                     channelSize = channelSize
                 ),
-                bytesWritten = readSize.toLong()
+                bytesWritten = readBytes.toLong()
             )
         )
     }
 
-    private fun toPcmBytes(buffer: ShortArray, readSize: Int): ByteArray {
-        val byteBuffer = ByteArray(readSize * 2)
-        for (i in 0 until readSize) {
-            byteBuffer[i * 2] = (buffer[i].toInt() and 0xFF).toByte()
-            byteBuffer[i * 2 + 1] = ((buffer[i].toInt() shr 8) and 0xFF).toByte()
-        }
-        return byteBuffer
-    }
+    private fun channelLevels(
+        data: ByteArray,
+        bytesRead: Int,
+        bytesPerSample: Int,
+        audioFormat: Int,
+        channelSize: Int
+    ): List<Float> {
+        val totalSamples = bytesRead / bytesPerSample
+        if (totalSamples <= 0) return List(channelSize) { 0f }
 
-    private fun channelLevels(data: ShortArray, length: Int, channelSize: Int): List<Float> {
-        if (length <= 0) return List(channelSize) { 0f }
         val safeChannels = channelSize.coerceAtLeast(1)
-        val samplesPerChannel = length / safeChannels
+        val samplesPerChannel = totalSamples / safeChannels
         if (samplesPerChannel <= 0) return List(safeChannels) { 0f }
 
-        val channels = ArrayList<ShortArray>(safeChannels)
-        repeat(safeChannels) {
-            channels.add(ShortArray(samplesPerChannel))
-        }
+        val amplitudes = FloatArray(totalSamples)
+        val buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN)
 
-        var i = 0
-        var j = 0
-        while (j < samplesPerChannel && i < length) {
-            channels.forEach { channel ->
-                if (i < length) {
-                    channel[j] = data[i]
-                    i += 1
+        for (i in 0 until totalSamples) {
+            amplitudes[i] = when (audioFormat) {
+                AudioFormat.ENCODING_PCM_8BIT -> {
+                    (data[i].toFloat() / 128f).coerceIn(-1f, 1f)
+                }
+                AudioFormat.ENCODING_PCM_16BIT -> {
+                    (buffer.getShort(i * bytesPerSample).toFloat() / 32768f).coerceIn(-1f, 1f)
+                }
+                AudioFormat.ENCODING_PCM_FLOAT -> {
+                    buffer.getFloat(i * bytesPerSample).coerceIn(-1f, 1f)
+                }
+                else -> {
+                    (buffer.getShort(i * bytesPerSample).toFloat() / 32768f).coerceIn(-1f, 1f)
                 }
             }
-            j += 1
         }
 
-        return channels.map { channel ->
+        return (0 until safeChannels).map { channelIndex ->
             var sum = 0f
             var peak = 0f
-            channel.forEach { sample ->
-                val amplitude = abs(sample / 32768f)
+            var count = 0
+            var i = channelIndex
+            while (i < totalSamples && count < samplesPerChannel) {
+                val amplitude = abs(amplitudes[i])
                 sum += amplitude
                 if (amplitude > peak) peak = amplitude
+                count++
+                i += safeChannels
             }
-            val mean = if (channel.isNotEmpty()) sum / channel.size else 0f
+            val mean = if (count > 0) sum / count else 0f
             ((mean * 0.6f) + (peak * 0.4f)).coerceIn(0f, 1f)
         }
     }

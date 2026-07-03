@@ -1,5 +1,7 @@
 package com.newbieeming.soundcapture.ui.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.newbieeming.soundcapture.R
 import com.newbieeming.soundcapture.data.model.RecordingConfig
 
+@RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun ConfigDialog(
     currentConfig: RecordingConfig,
@@ -31,6 +34,7 @@ fun ConfigDialog(
     var selectedSource by remember(currentConfig.audioSource) { mutableIntStateOf(currentConfig.audioSource) }
     var selectedSampleRate by remember(currentConfig.sampleRate) { mutableIntStateOf(currentConfig.sampleRate) }
     var selectedChannel by remember(currentConfig.channelConfig) { mutableIntStateOf(currentConfig.channelConfig) }
+    var selectedAudioFormat by remember(currentConfig.audioFormat) { mutableIntStateOf(currentConfig.audioFormat) }
     var selectedWaveformChannelCount by remember(currentConfig.waveformChannelCount) {
         mutableIntStateOf(currentConfig.waveformChannelCount)
     }
@@ -65,6 +69,12 @@ fun ConfigDialog(
                     onSelect = { selectedChannel = it }
                 )
 
+                Text(stringResource(id = R.string.label_audio_format), style = MaterialTheme.typography.titleSmall)
+                AudioFormatDropdown(
+                    selected = selectedAudioFormat,
+                    onSelect = { selectedAudioFormat = it }
+                )
+
                 Text(stringResource(id = R.string.label_audio_channel_count), style = MaterialTheme.typography.titleSmall)
                 WaveformChannelDropdown(
                     selected = selectedWaveformChannelCount,
@@ -80,7 +90,7 @@ fun ConfigDialog(
                             audioSource = selectedSource,
                             sampleRate = selectedSampleRate,
                             channelConfig = selectedChannel,
-                            audioFormat = currentConfig.audioFormat,
+                            audioFormat = selectedAudioFormat,
                             waveformChannelCount = selectedWaveformChannelCount
                         )
                     )
