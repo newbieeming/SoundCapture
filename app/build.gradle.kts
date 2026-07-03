@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.xmbest.soundcapture"
+    namespace = "com.newbieeming.soundcapture"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.xmbest.soundcapture"
+        applicationId = "com.newbieeming.soundcapture"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 100_000_001

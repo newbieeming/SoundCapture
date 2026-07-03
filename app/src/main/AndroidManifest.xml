@@ -12,7 +12,7 @@
         android:maxSdkVersion="29" />
 
     <application
-        android:name=".SoundCaptureApp"
+        android:name="com.newbieeming.soundcapture.SoundCaptureApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -22,8 +22,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SoundCapture">
         <activity
-            android:name=".MainActivity"
+            android:name="com.newbieeming.soundcapture.MainActivity"
             android:exported="true"
+            android:screenOrientation="landscape"
             android:label="@string/app_name"
             android:theme="@style/Theme.SoundCapture">
             <intent-filter>
