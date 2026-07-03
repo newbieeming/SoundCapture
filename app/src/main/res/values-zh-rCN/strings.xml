@@ -7,8 +7,6 @@
     <string name="btn_cancel">取消</string>
 
     <string name="cd_settings">配置</string>
-    <string name="cd_rename">重命名</string>
-    <string name="cd_delete">删除</string>
 
     <string name="dialog_recording_config_title">录音配置</string>
     <string name="dialog_rename_recording_title">重命名录音</string>
@@ -16,15 +14,17 @@
     <string name="label_audio_source">音频源</string>
     <string name="label_sample_rate">采样率</string>
     <string name="label_channel_config">声道配置</string>
-    <string name="label_audio_channel_count">音频通道数</string>
+    <string name="label_audio_channel_count">通道数</string>
     <string name="label_unknown">未知</string>
 
     <string name="format_rate_hz">%1$d Hz</string>
-    <string name="msg_grant_all_files_access">请先授予”所有文件访问权限”</string>
+    <string name="msg_need_record_permission">需要录音权限才能使用本应用</string>
+    <string name="msg_need_file_permission">需要文件访问权限才能保存录音</string>
+    <string name="btn_grant_permission">授予权限</string>
+    <string name="btn_authorized">已授权</string>
 
     <string name="msg_recording_failed">录音失败</string>
-    <string name="msg_delete_success">删除成功</string>
-    <string name="msg_delete_failed">删除失败</string>
-    <string name="msg_rename_success">重命名成功</string>
-    <string name="msg_rename_failed">重命名失败</string>
+    <string name="msg_save_success">文件已保存：%1$s</string>
+    <string name="msg_save_failed">保存失败</string>
+    <string name="btn_go_authorize">去授权</string>
 </resources>

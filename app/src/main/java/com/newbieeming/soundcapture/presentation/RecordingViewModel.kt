@@ -8,10 +8,10 @@ import com.newbieeming.soundcapture.data.model.RecordingConfig
 import com.newbieeming.soundcapture.data.repository.RecordingRepository
 import com.newbieeming.soundcapture.data.repository.SettingsRepository
 import com.newbieeming.soundcapture.domain.AudioRecorder
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -26,7 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RecordingViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val audioRecorder: AudioRecorder,
     private val repository: RecordingRepository,
     private val settingsRepository: SettingsRepository
@@ -39,19 +39,16 @@ class RecordingViewModel @Inject constructor(
     val effect = _effect.asSharedFlow()
 
     private var recordingJob: Job? = null
+    private var currentOutputFilePath: String? = null
 
     init {
-        observeRecordings()
         observeRecordingConfig()
-        refreshRecordings()
     }
 
     fun handleIntent(intent: RecordingIntent) {
         when (intent) {
             is RecordingIntent.StartRecording -> startRecording()
             is RecordingIntent.StopRecording -> stopRecording()
-            is RecordingIntent.DeleteRecording -> deleteRecording(intent.id)
-            is RecordingIntent.RenameRecording -> renameRecording(intent.id, intent.newName)
             is RecordingIntent.UpdateConfig -> updateConfig(intent.config)
         }
     }
@@ -59,6 +56,7 @@ class RecordingViewModel @Inject constructor(
     private fun startRecording() {
         val currentConfig = _state.value.config
         val outputFile = repository.createRecordingFile(currentConfig)
+        currentOutputFilePath = outputFile.absolutePath
 
         recordingJob = audioRecorder.startRecording(currentConfig, outputFile)
             .flowOn(Dispatchers.IO)
@@ -77,6 +75,7 @@ class RecordingViewModel @Inject constructor(
                     )
                 )
                 _state.update { it.copy(isRecording = false) }
+                currentOutputFilePath = null
             }
             .launchIn(viewModelScope)
     }
@@ -90,26 +89,14 @@ class RecordingViewModel @Inject constructor(
                 channelLevels = emptyList()
             )
         }
-        refreshRecordings()
-    }
-
-    private fun deleteRecording(id: String) {
         viewModelScope.launch {
-            if (repository.deleteRecording(id)) {
-                _effect.emit(RecordingEffect.ShowSuccess(context.getString(R.string.msg_delete_success)))
+            val filePath = currentOutputFilePath
+            if (filePath != null) {
+                _effect.emit(RecordingEffect.ShowSaveSuccess(filePath))
             } else {
-                _effect.emit(RecordingEffect.ShowError(context.getString(R.string.msg_delete_failed)))
+                _effect.emit(RecordingEffect.ShowSaveFailure)
             }
-        }
-    }
-
-    private fun renameRecording(id: String, newName: String) {
-        viewModelScope.launch {
-            if (repository.renameRecording(id, newName)) {
-                _effect.emit(RecordingEffect.ShowSuccess(context.getString(R.string.msg_rename_success)))
-            } else {
-                _effect.emit(RecordingEffect.ShowError(context.getString(R.string.msg_rename_failed)))
-            }
+            currentOutputFilePath = null
         }
     }
 
@@ -128,17 +115,4 @@ class RecordingViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    private fun observeRecordings() {
-        repository.recordings
-            .onEach { recordings ->
-                _state.update { it.copy(recordings = recordings) }
-            }
-            .launchIn(viewModelScope)
-    }
-
-    private fun refreshRecordings() {
-        viewModelScope.launch {
-            repository.loadRecordings()
-        }
-    }
 }

@@ -5,10 +5,6 @@ import android.media.AudioFormat
 import android.media.MediaRecorder
 import com.newbieeming.soundcapture.data.model.AudioFormatExt
 import com.newbieeming.soundcapture.data.model.RecordingConfig
-import com.newbieeming.soundcapture.data.model.RecordingItem
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -24,60 +20,12 @@ class RecordingRepository @Inject constructor() {
         private const val FILE_EXT = "pcm"
     }
 
-    private val _recordings = MutableStateFlow<List<RecordingItem>>(emptyList())
-    val recordings: Flow<List<RecordingItem>> = _recordings.asStateFlow()
-
     private val recordingsDir: File
         get() = File(RECORDINGS_DIR_PATH).apply { mkdirs() }
-
-    init {
-        loadRecordings()
-    }
-
-    fun loadRecordings() {
-        val items = runCatching {
-            recordingsDir.listFiles()?.mapNotNull { file ->
-                if (file.extension == FILE_EXT) {
-                    RecordingItem(
-                        id = file.nameWithoutExtension,
-                        name = file.nameWithoutExtension,
-                        filePath = file.absolutePath,
-                        duration = 0L,
-                        timestamp = file.lastModified(),
-                        sampleRate = 44100,
-                        channelConfig = 1
-                    )
-                } else {
-                    null
-                }
-            }?.sortedByDescending { it.timestamp } ?: emptyList()
-        }.getOrDefault(emptyList())
-
-        _recordings.value = items
-    }
 
     fun createRecordingFile(config: RecordingConfig): File {
         val baseName = buildFileBaseName(config)
         return uniqueRecordingFile(baseName)
-    }
-
-    fun deleteRecording(id: String): Boolean {
-        val file = File(recordingsDir, "$id.pcm")
-        val deleted = runCatching { file.delete() }.getOrDefault(false)
-        if (deleted) {
-            loadRecordings()
-        }
-        return deleted
-    }
-
-    fun renameRecording(id: String, newName: String): Boolean {
-        val oldFile = File(recordingsDir, "$id.pcm")
-        val newFile = File(recordingsDir, "$newName.pcm")
-        val renamed = runCatching { oldFile.renameTo(newFile) }.getOrDefault(false)
-        if (renamed) {
-            loadRecordings()
-        }
-        return renamed
     }
 
     private fun buildFileBaseName(config: RecordingConfig): String {
@@ -139,7 +87,7 @@ class RecordingRepository @Inject constructor() {
             AudioFormatExt.CHANNEL_IN_3POINT1POINT2 -> "3POINT1POINT2"
             AudioFormatExt.CHANNEL_IN_5POINT1 -> "5POINT1"
             AudioFormatExt.CHANNEL_IN_FRONT_BACK -> "FRONT_BACK"
-            else -> "c$channelConfig"
+            else -> "C$channelConfig"
         }
     }
 }
