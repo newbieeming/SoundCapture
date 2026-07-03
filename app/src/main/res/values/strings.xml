@@ -1,8 +1,5 @@
 <resources>
     <string name="app_name">SoundCapture</string>
-    <string name="title_recording_app">Recording App</string>
-    <string name="section_recordings">Recordings</string>
-    <string name="section_recordings_with_path">Recordings (%1$s)</string>
 
     <string name="btn_start_recording">Start Recording</string>
     <string name="btn_stop_recording">Stop Recording</string>
@@ -20,12 +17,9 @@
     <string name="label_sample_rate">Sample Rate</string>
     <string name="label_channel_config">Channel Config</string>
     <string name="label_audio_channel_count">Audio Channel Count</string>
-    <string name="label_display_scale">Display Scale</string>
     <string name="label_unknown">Unknown</string>
 
     <string name="format_rate_hz">%1$d Hz</string>
-    <string name="format_scale">x%1$s</string>
-    <string name="msg_saved_in_folder">Saved in %1$s folder</string>
     <string name="msg_grant_all_files_access">Please grant \"All files access\" first</string>
 
     <string name="msg_recording_failed">Recording failed</string>

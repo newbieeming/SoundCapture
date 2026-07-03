@@ -97,7 +97,9 @@ class AudioRecorder @Inject constructor() {
         outputStream: FileOutputStream,
         onData: suspend (RecordingData) -> Unit
     ) {
-        val readSize = recorder.read(buffer, 0, buffer.size)
+        // 每次只读一小块，提高波形更新频率
+        val chunkSize = minOf(buffer.size, 512)
+        val readSize = recorder.read(buffer, 0, chunkSize)
         if (readSize <= 0) {
             delay(5)
             return

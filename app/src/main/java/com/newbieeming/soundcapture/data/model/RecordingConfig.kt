@@ -8,6 +8,5 @@ data class RecordingConfig(
     val sampleRate: Int = 16000,
     val channelConfig: Int = AudioFormat.CHANNEL_IN_MONO,
     val audioFormat: Int = AudioFormat.ENCODING_PCM_16BIT,
-    val waveformChannelCount: Int = 1,
-    val waveformScale: Float = 1f
+    val waveformChannelCount: Int = 1
 )

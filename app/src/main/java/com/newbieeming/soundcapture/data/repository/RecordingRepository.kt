@@ -82,11 +82,11 @@ class RecordingRepository @Inject constructor() {
 
     private fun buildFileBaseName(config: RecordingConfig): String {
         val sampleRateToken = if (config.sampleRate % 1000 == 0) {
-            "${config.sampleRate / 1000}k"
+            "${config.sampleRate / 1000}K"
         } else {
-            "${config.sampleRate}hz"
+            "${config.sampleRate}HZ"
         }
-        val channelCountToken = "${config.waveformChannelCount.coerceIn(1, 8)}channel"
+        val channelCountToken = "${config.waveformChannelCount.coerceIn(1, 8)}CH"
         val sourceToken = audioSourceToken(config.audioSource)
         val channelConfigToken = channelConfigToken(config.channelConfig)
         val timeToken = SimpleDateFormat("yyMMddHHmmss", Locale.getDefault()).format(Date())
@@ -105,16 +105,16 @@ class RecordingRepository @Inject constructor() {
 
     private fun audioSourceToken(audioSource: Int): String {
         return when (audioSource) {
-            MediaRecorder.AudioSource.MIC -> "mic"
-            MediaRecorder.AudioSource.CAMCORDER -> "camcorder"
-            MediaRecorder.AudioSource.VOICE_RECOGNITION -> "voice_recognition"
-            MediaRecorder.AudioSource.VOICE_COMMUNICATION -> "voice_communication"
-            MediaRecorder.AudioSource.VOICE_CALL -> "voice_call"
-            MediaRecorder.AudioSource.VOICE_UPLINK -> "voice_up"
-            MediaRecorder.AudioSource.VOICE_DOWNLINK -> "voice_dn"
-            MediaRecorder.AudioSource.REMOTE_SUBMIX -> "remote_submix"
-            MediaRecorder.AudioSource.UNPROCESSED -> "unprocessed"
-            MediaRecorder.AudioSource.DEFAULT -> "default"
+            MediaRecorder.AudioSource.MIC -> "MIC"
+            MediaRecorder.AudioSource.CAMCORDER -> "CAMCORDER"
+            MediaRecorder.AudioSource.VOICE_RECOGNITION -> "VOICE_RECOGNITION"
+            MediaRecorder.AudioSource.VOICE_COMMUNICATION -> "VOICE_COMMUNICATION"
+            MediaRecorder.AudioSource.VOICE_CALL -> "VOICE_CALL"
+            MediaRecorder.AudioSource.VOICE_UPLINK -> "VOICE_UPLINK"
+            MediaRecorder.AudioSource.VOICE_DOWNLINK -> "VOICE_DOWNLINK"
+            MediaRecorder.AudioSource.REMOTE_SUBMIX -> "REMOTE_SUBMIX"
+            MediaRecorder.AudioSource.UNPROCESSED -> "UNPROCESSED"
+            MediaRecorder.AudioSource.DEFAULT -> "DEFAULT"
             else -> "s$audioSource"
         }
     }
@@ -127,18 +127,18 @@ class RecordingRepository @Inject constructor() {
             AudioFormat.CHANNEL_IN_LEFT -> "LEFT"
             AudioFormat.CHANNEL_IN_RIGHT -> "RIGHT"
             AudioFormat.CHANNEL_IN_BACK -> "BACK"
-            AudioFormatExt.Companion.CHANNEL_IN_BACK_LEFT -> "BACK_LEFT"
-            AudioFormatExt.Companion.CHANNEL_IN_BACK_RIGHT -> "BACK_RIGHT"
-            AudioFormatExt.Companion.CHANNEL_IN_CENTER -> "CENTER"
-            AudioFormatExt.Companion.CHANNEL_IN_LOW_FREQUENCY -> "LOW_FREQUENCY"
-            AudioFormatExt.Companion.CHANNEL_IN_TOP_LEFT -> "TOP_LEFT"
-            AudioFormatExt.Companion.CHANNEL_IN_TOP_RIGHT -> "TOP_RIGHT"
-            AudioFormatExt.Companion.CHANNEL_IN_2POINT0POINT2 -> "2POINT0POINT2"
-            AudioFormatExt.Companion.CHANNEL_IN_2POINT1POINT2 -> "2POINT1POINT2"
-            AudioFormatExt.Companion.CHANNEL_IN_3POINT0POINT2 -> "3POINT0POINT2"
-            AudioFormatExt.Companion.CHANNEL_IN_3POINT1POINT2 -> "3POINT1POINT2"
-            AudioFormatExt.Companion.CHANNEL_IN_5POINT1 -> "5POINT1"
-            AudioFormatExt.Companion.CHANNEL_IN_FRONT_BACK -> "FRONT_BACK"
+            AudioFormatExt.CHANNEL_IN_BACK_LEFT -> "BACK_LEFT"
+            AudioFormatExt.CHANNEL_IN_BACK_RIGHT -> "BACK_RIGHT"
+            AudioFormatExt.CHANNEL_IN_CENTER -> "CENTER"
+            AudioFormatExt.CHANNEL_IN_LOW_FREQUENCY -> "LOW_FREQUENCY"
+            AudioFormatExt.CHANNEL_IN_TOP_LEFT -> "TOP_LEFT"
+            AudioFormatExt.CHANNEL_IN_TOP_RIGHT -> "TOP_RIGHT"
+            AudioFormatExt.CHANNEL_IN_2POINT0POINT2 -> "2POINT0POINT2"
+            AudioFormatExt.CHANNEL_IN_2POINT1POINT2 -> "2POINT1POINT2"
+            AudioFormatExt.CHANNEL_IN_3POINT0POINT2 -> "3POINT0POINT2"
+            AudioFormatExt.CHANNEL_IN_3POINT1POINT2 -> "3POINT1POINT2"
+            AudioFormatExt.CHANNEL_IN_5POINT1 -> "5POINT1"
+            AudioFormatExt.CHANNEL_IN_FRONT_BACK -> "FRONT_BACK"
             else -> "c$channelConfig"
         }
     }

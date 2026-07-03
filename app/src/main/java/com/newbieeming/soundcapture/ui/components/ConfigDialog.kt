@@ -12,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -34,9 +33,6 @@ fun ConfigDialog(
     var selectedChannel by remember(currentConfig.channelConfig) { mutableIntStateOf(currentConfig.channelConfig) }
     var selectedWaveformChannelCount by remember(currentConfig.waveformChannelCount) {
         mutableIntStateOf(currentConfig.waveformChannelCount)
-    }
-    var selectedWaveformScale by remember(currentConfig.waveformScale) {
-        mutableFloatStateOf(currentConfig.waveformScale)
     }
     val scrollState = rememberScrollState()
 
@@ -74,12 +70,6 @@ fun ConfigDialog(
                     selected = selectedWaveformChannelCount,
                     onSelect = { selectedWaveformChannelCount = it }
                 )
-
-                Text(stringResource(id = R.string.label_display_scale), style = MaterialTheme.typography.titleSmall)
-                WaveformScaleDropdown(
-                    selected = selectedWaveformScale,
-                    onSelect = { selectedWaveformScale = it }
-                )
             }
         },
         confirmButton = {
@@ -91,8 +81,7 @@ fun ConfigDialog(
                             sampleRate = selectedSampleRate,
                             channelConfig = selectedChannel,
                             audioFormat = currentConfig.audioFormat,
-                            waveformChannelCount = selectedWaveformChannelCount,
-                            waveformScale = selectedWaveformScale
+                            waveformChannelCount = selectedWaveformChannelCount
                         )
                     )
                 }

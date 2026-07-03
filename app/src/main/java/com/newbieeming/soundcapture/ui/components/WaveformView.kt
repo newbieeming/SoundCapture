@@ -1,12 +1,12 @@
 package com.newbieeming.soundcapture.ui.components
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -16,98 +16,65 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlin.math.exp
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToInt
 
 private const val LEVEL_MIN = 0f
 private const val LEVEL_MAX = 1f
-private const val SMOOTH_PREVIOUS_WEIGHT = 0.65f
-private const val SMOOTH_CURRENT_WEIGHT = 0.35f
-private const val MIN_NORMALIZATION_MAX = 0.001f
 
 @Composable
 fun WaveformView(
     channelLevels: List<Float>,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
-    maxBars: Int = 80,
-    barWidth: Dp = 4.dp,
-    barGap: Dp = 8.dp,
-    scrollDurationMs: Int = 90,
-    amplitudeScale: Float = 1.7f,
+    barWidth: Dp = 1.dp,
+    barGap: Dp = 1.dp,
     channelCount: Int = 1,
-    minLineHeight: Dp = 2.dp,
     isActive: Boolean = true
 ) {
     val channelSamples = remember { mutableStateListOf<MutableList<Float>>() }
-    val offset = remember { Animatable(0f) }
+    val wasActive = remember { mutableStateOf(isActive) }
     val density = LocalDensity.current
-    val spacing = with(density) { (barWidth + barGap).toPx() }
     val barWidthPx = with(density) { barWidth.toPx() }
-    val halfBarWidth = barWidthPx / 2f
-    val minLineHeightPx = with(density) { minLineHeight.toPx() }
+    val spacingPx = with(density) { (barWidth + barGap).toPx() }
 
+    // 新录音开始时清除旧数据
     LaunchedEffect(isActive) {
-        if (!isActive) {
+        if (isActive && !wasActive.value) {
             channelSamples.clear()
-            offset.snapTo(0f)
+        }
+        wasActive.value = isActive
+    }
+
+    LaunchedEffect(channelLevels, isActive, channelCount) {
+        if (!isActive || channelLevels.isEmpty()) return@LaunchedEffect
+
+        val safeChannelCount = channelCount.coerceIn(1, 8)
+        while (channelSamples.size < safeChannelCount) {
+            channelSamples.add(mutableStateListOf<Float>())
+        }
+        while (channelSamples.size > safeChannelCount) {
+            channelSamples.removeAt(channelSamples.lastIndex)
+        }
+
+        for (channelIndex in 0 until safeChannelCount) {
+            val level = (channelLevels.getOrNull(channelIndex) ?: 0f)
+                .coerceIn(LEVEL_MIN, LEVEL_MAX)
+            val samples = channelSamples[channelIndex]
+            samples.add(level)
+            // 保留足够数据，绘制时按实际宽度裁剪
+            if (samples.size > 500) {
+                samples.removeAt(0)
+            }
         }
     }
 
-    LaunchedEffect(channelLevels, isActive, maxBars, spacing, scrollDurationMs, channelCount) {
-        if (!isActive || channelLevels.isEmpty()) return@LaunchedEffect
-
-        updateChannelSamples(
-            channelLevels = channelLevels,
-            channelSamples = channelSamples,
-            channelCount = channelCount,
-            maxBars = maxBars
-        )
-
-        offset.snapTo(0f)
-        offset.animateTo(
-            targetValue = spacing,
-            animationSpec = tween(durationMillis = scrollDurationMs)
-        )
-    }
-
-    Canvas(
-        modifier = modifier
-            .fillMaxSize()
-    ) {
+    Canvas(modifier = modifier.fillMaxSize()) {
         drawWaveformBars(
             channelSamples = channelSamples,
             size = size,
             color = color,
-            spacing = spacing,
-            offset = offset.value,
-            halfBarWidth = halfBarWidth,
             barWidthPx = barWidthPx,
-            amplitudeScale = amplitudeScale,
-            minLineHeightPx = minLineHeightPx
+            spacingPx = spacingPx
         )
-    }
-}
-
-private fun updateChannelSamples(
-    channelLevels: List<Float>,
-    channelSamples: MutableList<MutableList<Float>>,
-    channelCount: Int,
-    maxBars: Int
-) {
-    val safeChannelCount = channelCount.coerceIn(1, 8)
-    while (channelSamples.size < safeChannelCount) {
-        channelSamples.add(mutableStateListOf<Float>())
-    }
-    while (channelSamples.size > safeChannelCount) {
-        channelSamples.removeAt(channelSamples.lastIndex)
-    }
-
-    for (channelIndex in 0 until safeChannelCount) {
-        val level = (channelLevels.getOrNull(channelIndex) ?: 0f).coerceIn(LEVEL_MIN, LEVEL_MAX)
-        appendSample(samples = channelSamples[channelIndex], level = level, maxBars = maxBars)
     }
 }
 
@@ -115,40 +82,31 @@ private fun DrawScope.drawWaveformBars(
     channelSamples: List<List<Float>>,
     size: Size,
     color: Color,
-    spacing: Float,
-    offset: Float,
-    halfBarWidth: Float,
     barWidthPx: Float,
-    amplitudeScale: Float,
-    minLineHeightPx: Float
+    spacingPx: Float
 ) {
-    if (channelSamples.isEmpty()) return
+    if (channelSamples.isEmpty() || spacingPx <= 0f) return
 
     val safeChannelCount = channelSamples.size.coerceIn(1, 8)
     val laneHeight = size.height / safeChannelCount
-    val maxLineHeightPerLane = laneHeight / 2f
-    val visibleBars = visibleBarCount(width = size.width, spacing = spacing)
+    val maxHalfHeight = laneHeight / 2f
+    // 容器能放下多少根柱子
+    val maxBars = (size.width / spacingPx).toInt()
 
     for (channelIndex in 0 until safeChannelCount) {
-        val reversed = channelSamples[channelIndex].asReversed()
-        if (reversed.isEmpty()) continue
-        val windowMax = normalizationMax(reversed = reversed, visibleBars = visibleBars)
+        val samples = channelSamples[channelIndex]
+        if (samples.isEmpty()) continue
         val centerY = laneHeight * (channelIndex + 0.5f)
 
-        for (index in 0 until minOf(reversed.size, visibleBars)) {
-            val x = size.width - (index * spacing) - offset
-            if (x < -halfBarWidth || x > size.width + halfBarWidth) continue
+        // 从最新数据往左取，最多取 maxBars 个
+        val count = minOf(samples.size, maxBars)
+        val startIndex = samples.size - count
 
-            val normalizedAmplitude = normalizedAmplitude(
-                amplitude = reversed[index],
-                windowMax = windowMax
-            )
-            val lineHeight = calculateLineHeight(
-                normalizedAmplitude = normalizedAmplitude,
-                amplitudeScale = amplitudeScale,
-                maxLineHeightPerLane = maxLineHeightPerLane,
-                minLineHeightPx = minLineHeightPx
-            )
+        for (i in 0 until count) {
+            // 从左到右绘制，最左边是最旧的可见数据，最右边是最新的
+            val x = i * spacingPx + barWidthPx / 2f
+            val amplitude = samples[startIndex + i].coerceIn(LEVEL_MIN, LEVEL_MAX)
+            val lineHeight = maxHalfHeight * amplitude
             drawLine(
                 color = color,
                 start = Offset(x, centerY - lineHeight),
@@ -157,43 +115,4 @@ private fun DrawScope.drawWaveformBars(
             )
         }
     }
-}
-
-private fun normalizationMax(reversed: List<Float>, visibleBars: Int): Float {
-    return reversed
-        .take(visibleBars)
-        .maxOrNull()
-        ?.coerceAtLeast(MIN_NORMALIZATION_MAX)
-        ?: 1f
-}
-
-private fun normalizedAmplitude(amplitude: Float, windowMax: Float): Float {
-    return (amplitude.coerceIn(LEVEL_MIN, LEVEL_MAX) / windowMax).coerceIn(LEVEL_MIN, LEVEL_MAX)
-}
-
-private fun appendSample(samples: MutableList<Float>, level: Float, maxBars: Int) {
-    val last = samples.lastOrNull() ?: 0f
-    val smoothed = (last * SMOOTH_PREVIOUS_WEIGHT) + (level * SMOOTH_CURRENT_WEIGHT)
-    samples.add(smoothed)
-    val overflow = samples.size - maxBars
-    if (overflow > 0) {
-        repeat(overflow) { samples.removeAt(0) }
-    }
-}
-
-private fun visibleBarCount(width: Float, spacing: Float): Int {
-    if (spacing <= 0f) return 0
-    return (width / spacing).roundToInt() + 2
-}
-
-private fun calculateLineHeight(
-    normalizedAmplitude: Float,
-    amplitudeScale: Float,
-    maxLineHeightPerLane: Float,
-    minLineHeightPx: Float
-): Float {
-    if (normalizedAmplitude <= 0f || maxLineHeightPerLane <= 0f) return 0f
-    val scaledHeight = maxLineHeightPerLane * (1f - exp(-normalizedAmplitude * amplitudeScale))
-    val minForLane = min(minLineHeightPx, maxLineHeightPerLane)
-    return max(scaledHeight, minForLane * normalizedAmplitude)
 }

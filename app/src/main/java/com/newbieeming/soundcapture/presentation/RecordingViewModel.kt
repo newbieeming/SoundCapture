@@ -39,7 +39,6 @@ class RecordingViewModel @Inject constructor(
     val effect = _effect.asSharedFlow()
 
     private var recordingJob: Job? = null
-    private var startTime: Long = 0
 
     init {
         observeRecordings()
@@ -51,19 +50,15 @@ class RecordingViewModel @Inject constructor(
         when (intent) {
             is RecordingIntent.StartRecording -> startRecording()
             is RecordingIntent.StopRecording -> stopRecording()
-            is RecordingIntent.PauseRecording -> pauseRecording()
-            is RecordingIntent.ResumeRecording -> resumeRecording()
             is RecordingIntent.DeleteRecording -> deleteRecording(intent.id)
             is RecordingIntent.RenameRecording -> renameRecording(intent.id, intent.newName)
             is RecordingIntent.UpdateConfig -> updateConfig(intent.config)
-            is RecordingIntent.LoadRecordings -> refreshRecordings()
         }
     }
 
     private fun startRecording() {
         val currentConfig = _state.value.config
         val outputFile = repository.createRecordingFile(currentConfig)
-        startTime = System.currentTimeMillis()
 
         recordingJob = audioRecorder.startRecording(currentConfig, outputFile)
             .flowOn(Dispatchers.IO)
@@ -71,8 +66,6 @@ class RecordingViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         isRecording = true,
-                        isPaused = false,
-                        currentDuration = System.currentTimeMillis() - startTime,
                         channelLevels = data.channelLevels
                     )
                 }
@@ -94,22 +87,10 @@ class RecordingViewModel @Inject constructor(
         _state.update {
             it.copy(
                 isRecording = false,
-                isPaused = false,
-                currentDuration = 0,
                 channelLevels = emptyList()
             )
         }
         refreshRecordings()
-    }
-
-    private fun pauseRecording() {
-        audioRecorder.pause()
-        _state.update { it.copy(isPaused = true) }
-    }
-
-    private fun resumeRecording() {
-        audioRecorder.resume()
-        _state.update { it.copy(isPaused = false) }
     }
 
     private fun deleteRecording(id: String) {

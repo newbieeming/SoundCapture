@@ -3,7 +3,6 @@ package com.newbieeming.soundcapture.data.repository
 import android.content.Context
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import com.newbieeming.soundcapture.data.model.RecordingConfig
@@ -29,7 +28,6 @@ class SettingsRepository @Inject constructor(
         val ChannelConfigKey = intPreferencesKey("channel_config")
         val AudioFormatKey = intPreferencesKey("audio_format")
         val WaveformChannelKey = intPreferencesKey("waveform_channel")
-        val WaveformScaleInConfigKey = floatPreferencesKey("waveform_scale_in_config")
     }
 
     private val preferences = context.dataStore.data
@@ -50,9 +48,7 @@ class SettingsRepository @Inject constructor(
                 audioFormat = preferences[AudioFormatKey] ?: defaultConfig.audioFormat,
                 waveformChannelCount = (preferences[WaveformChannelKey]
                     ?: defaultConfig.waveformChannelCount)
-                    .coerceIn(1, 8),
-                waveformScale = preferences[WaveformScaleInConfigKey]
-                    ?: defaultConfig.waveformScale
+                    .coerceIn(1, 8)
             )
         }
 
@@ -63,7 +59,6 @@ class SettingsRepository @Inject constructor(
             preferences[ChannelConfigKey] = config.channelConfig
             preferences[AudioFormatKey] = config.audioFormat
             preferences[WaveformChannelKey] = config.waveformChannelCount.coerceIn(1, 8)
-            preferences[WaveformScaleInConfigKey] = config.waveformScale
         }
     }
 }
