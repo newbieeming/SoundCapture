@@ -12,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -21,8 +22,10 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class RecordingViewModel @Inject constructor(
@@ -39,7 +42,9 @@ class RecordingViewModel @Inject constructor(
     val effect = _effect.asSharedFlow()
 
     private var recordingJob: Job? = null
+    private var durationJob: Job? = null
     private var currentOutputFilePath: String? = null
+    private var recordingStartTimeMs: Long = 0L
 
     init {
         observeRecordingConfig()
@@ -57,6 +62,7 @@ class RecordingViewModel @Inject constructor(
         val currentConfig = _state.value.config
         val outputFile = repository.createRecordingFile(currentConfig)
         currentOutputFilePath = outputFile.absolutePath
+        recordingStartTimeMs = System.currentTimeMillis()
 
         recordingJob = audioRecorder.startRecording(currentConfig, outputFile)
             .flowOn(Dispatchers.IO)
@@ -76,17 +82,28 @@ class RecordingViewModel @Inject constructor(
                 )
                 _state.update { it.copy(isRecording = false) }
                 currentOutputFilePath = null
+                durationJob?.cancel()
             }
             .launchIn(viewModelScope)
+
+        durationJob = viewModelScope.launch {
+            while (isActive) {
+                val elapsed = System.currentTimeMillis() - recordingStartTimeMs
+                _state.update { it.copy(recordingDurationMs = elapsed) }
+                delay(100.milliseconds)
+            }
+        }
     }
 
     private fun stopRecording() {
         audioRecorder.stop()
         recordingJob?.cancel()
+        durationJob?.cancel()
         _state.update {
             it.copy(
                 isRecording = false,
-                channelLevels = emptyList()
+                channelLevels = emptyList(),
+                recordingDurationMs = 0L
             )
         }
         viewModelScope.launch {

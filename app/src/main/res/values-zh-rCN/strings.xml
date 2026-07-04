@@ -8,6 +8,8 @@
 
     <string name="cd_settings">配置</string>
 
+    <string name="label_recording_params">录音参数</string>
+
     <string name="dialog_recording_config_title">录音配置</string>
     <string name="label_audio_source">音频源</string>
     <string name="label_sample_rate">采样率</string>

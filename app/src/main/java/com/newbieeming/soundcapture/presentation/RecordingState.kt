@@ -5,5 +5,6 @@ import com.newbieeming.soundcapture.data.model.RecordingConfig
 data class RecordingState(
     val isRecording: Boolean = false,
     val config: RecordingConfig = RecordingConfig(),
-    val channelLevels: List<Float> = emptyList()
+    val channelLevels: List<Float> = emptyList(),
+    val recordingDurationMs: Long = 0L
 )

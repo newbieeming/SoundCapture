@@ -10,9 +10,12 @@ import android.os.Environment
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -20,14 +23,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -45,9 +52,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -57,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.newbieeming.soundcapture.R
+import com.newbieeming.soundcapture.data.repository.RecordingRepository
 import com.newbieeming.soundcapture.presentation.RecordingEffect
 import com.newbieeming.soundcapture.presentation.RecordingIntent
 import com.newbieeming.soundcapture.presentation.RecordingState
@@ -64,6 +73,7 @@ import com.newbieeming.soundcapture.presentation.RecordingViewModel
 import com.newbieeming.soundcapture.ui.components.ConfigDialog
 import com.newbieeming.soundcapture.ui.components.WaveformView
 
+@RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RecordingScreen(
@@ -82,7 +92,8 @@ fun RecordingScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 // 每次页面回到前台时重新检查文件权限
-                hasFilePermission = !requiresAllFilesAccessPermission() || Environment.isExternalStorageManager()
+                hasFilePermission =
+                    !requiresAllFilesAccessPermission() || Environment.isExternalStorageManager()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -121,8 +132,8 @@ fun RecordingScreen(
     val hasRecordPermission = permissionsState.allPermissionsGranted
     val needsFilePermission = !hasFilePermission
     val isRecordPermanentlyDenied = hasRequestedRecordPermission
-        && !hasRecordPermission
-        && !permissionsState.shouldShowRationale
+            && !hasRecordPermission
+            && !permissionsState.shouldShowRationale
 
     if (!hasRecordPermission || needsFilePermission) {
         PermissionScreen(
@@ -147,29 +158,54 @@ fun RecordingScreen(
                     RecordingPanel(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(7f),
+                            .weight(0.75f),
                         state = state
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Card(modifier = Modifier.fillMaxHeight().weight(3f)) {
+                    Card(modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(0.25f)) {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(8.dp),
+                                .padding(12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
                         ) {
+                            // 录音参数展示 - 顶部
+                            RecordingParamsInfo(config = state.config)
+
+                            // 中间弹性空间
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            // 录制时长
+                            RecordingDuration(
+                                isRecording = state.isRecording,
+                                durationMs = state.recordingDurationMs
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // 录音按钮 - 靠近底部
                             RecordingControlButton(
                                 isRecording = state.isRecording,
                                 onStart = { viewModel.handleIntent(RecordingIntent.StartRecording) },
                                 onStop = { viewModel.handleIntent(RecordingIntent.StopRecording) }
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            IconButton(onClick = { showConfigDialog = true }) {
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // 设置按钮 - 最底部
+                            FilledTonalButton(
+                                onClick = { showConfigDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 Icon(
                                     Icons.Default.Settings,
-                                    contentDescription = stringResource(id = R.string.cd_settings)
+                                    contentDescription = stringResource(id = R.string.cd_settings),
+                                    modifier = Modifier.size(18.dp)
                                 )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(id = R.string.cd_settings))
                             }
                         }
                     }
@@ -317,15 +353,18 @@ private fun ObserveEffects(
                 is RecordingEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
+
                 is RecordingEffect.ShowSuccess -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
+
                 is RecordingEffect.ShowSaveSuccess -> {
                     snackbarHostState.showSnackbar(
                         message = context.getString(R.string.msg_save_success, effect.filePath),
                         duration = SnackbarDuration.Short
                     )
                 }
+
                 is RecordingEffect.ShowSaveFailure -> {
                     val result = snackbarHostState.showSnackbar(
                         message = context.getString(R.string.msg_save_failed),
@@ -368,10 +407,98 @@ private fun RecordingControlButton(
     if (isRecording) {
         Button(
             onClick = onStop,
-        ) { Text(stringResource(id = R.string.btn_stop_recording)) }
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                Icons.Default.Stop,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(stringResource(id = R.string.btn_stop_recording))
+        }
     } else {
         Button(
             onClick = onStart,
-        ) { Text(stringResource(id = R.string.btn_start_recording)) }
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                Icons.Default.Mic,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(stringResource(id = R.string.btn_start_recording))
+        }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RecordingParamsInfo(config: com.newbieeming.soundcapture.data.model.RecordingConfig) {
+    val params = listOf(
+        RecordingRepository.sampleRateToken(config.sampleRate),
+        RecordingRepository.audioFormatToken(config.audioFormat),
+        RecordingRepository.channelConfigToken(config.channelConfig),
+        RecordingRepository.audioSourceToken(config.audioSource),
+        RecordingRepository.channelCountToken(config.waveformChannelCount)
+    )
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(id = R.string.label_recording_params),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            params.forEachIndexed { index, param ->
+                Text(
+                    text = param,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (index < params.lastIndex) {
+                    Text(
+                        text = " · ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@SuppressLint("DefaultLocale")
+@Composable
+private fun RecordingDuration(
+    isRecording: Boolean,
+    durationMs: Long
+) {
+    val totalSeconds = (durationMs / 1000).toInt()
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    val millis = (durationMs % 1000).toInt()
+    val timeText = String.format("%02d:%02d.%03d", minutes, seconds, millis)
+
+    Text(
+        text = timeText,
+        style = MaterialTheme.typography.headlineMedium.copy(
+            fontFamily = FontFamily.Serif
+        ),
+        color = if (isRecording) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+        }
+    )
 }

@@ -8,6 +8,8 @@
 
     <string name="cd_settings">Settings</string>
 
+    <string name="label_recording_params">Recording Params</string>
+
     <string name="dialog_recording_config_title">Recording Config</string>
     <string name="label_audio_source">Audio Source</string>
     <string name="label_sample_rate">Sample Rate</string>

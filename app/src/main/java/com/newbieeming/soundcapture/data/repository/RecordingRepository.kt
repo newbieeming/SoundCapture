@@ -14,10 +14,72 @@ import javax.inject.Singleton
 
 @Singleton
 class RecordingRepository @Inject constructor() {
-    private companion object {
+    companion object {
         @SuppressLint("SdCardPath")
         private const val RECORDINGS_DIR_PATH = "/sdcard/SoundCapture"
         private const val FILE_EXT = "pcm"
+
+        fun sampleRateToken(sampleRate: Int): String {
+            return if (sampleRate % 1000 == 0) {
+                "${sampleRate / 1000}K"
+            } else {
+                "${sampleRate}HZ"
+            }
+        }
+
+        fun channelCountToken(channelCount: Int): String {
+            return "${channelCount.coerceIn(1, 8)}CH"
+        }
+
+        fun audioSourceToken(audioSource: Int): String {
+            return when (audioSource) {
+                MediaRecorder.AudioSource.MIC -> "MIC"
+                MediaRecorder.AudioSource.CAMCORDER -> "CAMCORDER"
+                MediaRecorder.AudioSource.VOICE_RECOGNITION -> "VOICE_RECOGNITION"
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION -> "VOICE_COMMUNICATION"
+                MediaRecorder.AudioSource.VOICE_CALL -> "VOICE_CALL"
+                MediaRecorder.AudioSource.VOICE_UPLINK -> "VOICE_UPLINK"
+                MediaRecorder.AudioSource.VOICE_DOWNLINK -> "VOICE_DOWNLINK"
+                MediaRecorder.AudioSource.REMOTE_SUBMIX -> "REMOTE_SUBMIX"
+                MediaRecorder.AudioSource.UNPROCESSED -> "UNPROCESSED"
+                MediaRecorder.AudioSource.DEFAULT -> "DEFAULT"
+                else -> "s$audioSource"
+            }
+        }
+
+        fun channelConfigToken(channelConfig: Int): String {
+            return when (channelConfig) {
+                AudioFormat.CHANNEL_IN_DEFAULT -> "DEFAULT"
+                AudioFormat.CHANNEL_IN_MONO -> "MONO"
+                AudioFormat.CHANNEL_IN_STEREO -> "STEREO"
+                AudioFormat.CHANNEL_IN_LEFT -> "LEFT"
+                AudioFormat.CHANNEL_IN_RIGHT -> "RIGHT"
+                AudioFormat.CHANNEL_IN_BACK -> "BACK"
+                AudioFormatExt.CHANNEL_IN_BACK_LEFT -> "BACK_LEFT"
+                AudioFormatExt.CHANNEL_IN_BACK_RIGHT -> "BACK_RIGHT"
+                AudioFormatExt.CHANNEL_IN_CENTER -> "CENTER"
+                AudioFormatExt.CHANNEL_IN_LOW_FREQUENCY -> "LOW_FREQUENCY"
+                AudioFormatExt.CHANNEL_IN_TOP_LEFT -> "TOP_LEFT"
+                AudioFormatExt.CHANNEL_IN_TOP_RIGHT -> "TOP_RIGHT"
+                AudioFormatExt.CHANNEL_IN_2POINT0POINT2 -> "2POINT0POINT2"
+                AudioFormatExt.CHANNEL_IN_2POINT1POINT2 -> "2POINT1POINT2"
+                AudioFormatExt.CHANNEL_IN_3POINT0POINT2 -> "3POINT0POINT2"
+                AudioFormatExt.CHANNEL_IN_3POINT1POINT2 -> "3POINT1POINT2"
+                AudioFormatExt.CHANNEL_IN_5POINT1 -> "5POINT1"
+                AudioFormatExt.CHANNEL_IN_FRONT_BACK -> "FRONT_BACK"
+                else -> "C$channelConfig"
+            }
+        }
+
+        fun audioFormatToken(audioFormat: Int): String {
+            return when (audioFormat) {
+                AudioFormat.ENCODING_PCM_8BIT -> "8BIT"
+                AudioFormat.ENCODING_PCM_16BIT -> "16BIT"
+                AudioFormat.ENCODING_PCM_32BIT -> "32BIT"
+                AudioFormat.ENCODING_PCM_FLOAT -> "FLOAT"
+                else -> "F$audioFormat"
+            }
+        }
     }
 
     private val recordingsDir: File
@@ -29,17 +91,8 @@ class RecordingRepository @Inject constructor() {
     }
 
     private fun buildFileBaseName(config: RecordingConfig): String {
-        val sampleRateToken = if (config.sampleRate % 1000 == 0) {
-            "${config.sampleRate / 1000}K"
-        } else {
-            "${config.sampleRate}HZ"
-        }
-        val channelCountToken = "${config.waveformChannelCount.coerceIn(1, 8)}CH"
-        val sourceToken = audioSourceToken(config.audioSource)
-        val channelConfigToken = channelConfigToken(config.channelConfig)
-        val audioFormatToken = audioFormatToken(config.audioFormat)
         val timeToken = SimpleDateFormat("yyMMddHHmmss", Locale.getDefault()).format(Date())
-        return "${sampleRateToken}_${channelCountToken}_${sourceToken}_${channelConfigToken}_${audioFormatToken}_${timeToken}"
+        return "${sampleRateToken(config.sampleRate)}_${channelCountToken(config.waveformChannelCount)}_${audioSourceToken(config.audioSource)}_${channelConfigToken(config.channelConfig)}_${audioFormatToken(config.audioFormat)}_${timeToken}"
     }
 
     private fun uniqueRecordingFile(baseName: String): File {
@@ -50,55 +103,5 @@ class RecordingRepository @Inject constructor() {
             suffix += 1
         }
         return candidate
-    }
-
-    private fun audioSourceToken(audioSource: Int): String {
-        return when (audioSource) {
-            MediaRecorder.AudioSource.MIC -> "MIC"
-            MediaRecorder.AudioSource.CAMCORDER -> "CAMCORDER"
-            MediaRecorder.AudioSource.VOICE_RECOGNITION -> "VOICE_RECOGNITION"
-            MediaRecorder.AudioSource.VOICE_COMMUNICATION -> "VOICE_COMMUNICATION"
-            MediaRecorder.AudioSource.VOICE_CALL -> "VOICE_CALL"
-            MediaRecorder.AudioSource.VOICE_UPLINK -> "VOICE_UPLINK"
-            MediaRecorder.AudioSource.VOICE_DOWNLINK -> "VOICE_DOWNLINK"
-            MediaRecorder.AudioSource.REMOTE_SUBMIX -> "REMOTE_SUBMIX"
-            MediaRecorder.AudioSource.UNPROCESSED -> "UNPROCESSED"
-            MediaRecorder.AudioSource.DEFAULT -> "DEFAULT"
-            else -> "s$audioSource"
-        }
-    }
-
-    private fun channelConfigToken(channelConfig: Int): String {
-        return when (channelConfig) {
-            AudioFormat.CHANNEL_IN_DEFAULT -> "DEFAULT"
-            AudioFormat.CHANNEL_IN_MONO -> "MONO"
-            AudioFormat.CHANNEL_IN_STEREO -> "STEREO"
-            AudioFormat.CHANNEL_IN_LEFT -> "LEFT"
-            AudioFormat.CHANNEL_IN_RIGHT -> "RIGHT"
-            AudioFormat.CHANNEL_IN_BACK -> "BACK"
-            AudioFormatExt.CHANNEL_IN_BACK_LEFT -> "BACK_LEFT"
-            AudioFormatExt.CHANNEL_IN_BACK_RIGHT -> "BACK_RIGHT"
-            AudioFormatExt.CHANNEL_IN_CENTER -> "CENTER"
-            AudioFormatExt.CHANNEL_IN_LOW_FREQUENCY -> "LOW_FREQUENCY"
-            AudioFormatExt.CHANNEL_IN_TOP_LEFT -> "TOP_LEFT"
-            AudioFormatExt.CHANNEL_IN_TOP_RIGHT -> "TOP_RIGHT"
-            AudioFormatExt.CHANNEL_IN_2POINT0POINT2 -> "2POINT0POINT2"
-            AudioFormatExt.CHANNEL_IN_2POINT1POINT2 -> "2POINT1POINT2"
-            AudioFormatExt.CHANNEL_IN_3POINT0POINT2 -> "3POINT0POINT2"
-            AudioFormatExt.CHANNEL_IN_3POINT1POINT2 -> "3POINT1POINT2"
-            AudioFormatExt.CHANNEL_IN_5POINT1 -> "5POINT1"
-            AudioFormatExt.CHANNEL_IN_FRONT_BACK -> "FRONT_BACK"
-            else -> "C$channelConfig"
-        }
-    }
-
-    private fun audioFormatToken(audioFormat: Int): String {
-        return when (audioFormat) {
-            AudioFormat.ENCODING_PCM_8BIT -> "8BIT"
-            AudioFormat.ENCODING_PCM_16BIT -> "16BIT"
-            AudioFormat.ENCODING_PCM_32BIT -> "32BIT"
-            AudioFormat.ENCODING_PCM_FLOAT -> "FLOAT"
-            else -> "F$audioFormat"
-        }
     }
 }
