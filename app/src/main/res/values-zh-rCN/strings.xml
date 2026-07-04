@@ -9,6 +9,18 @@
     <string name="cd_settings">配置</string>
 
     <string name="label_recording_params">录音参数</string>
+    <string name="config_mono">单声道</string>
+    <string name="config_stereo">立体声</string>
+
+    <string name="permission_title">必要权限</string>
+    <string name="permission_subtitle">授予权限以开始录音体验</string>
+    <string name="permission_record_title">麦克风</string>
+    <string name="permission_record_desc">用于录制音频输入</string>
+    <string name="permission_file_title">存储空间</string>
+    <string name="permission_file_desc">用于保存录音文件</string>
+    <string name="btn_grant">授予</string>
+    <string name="btn_granted">已授权</string>
+    <string name="permission_security_hint">录音仅保存在本地，不会上传</string>
 
     <string name="dialog_recording_config_title">录音配置</string>
     <string name="label_audio_source">音频源</string>
