@@ -8,5 +8,7 @@ data class RecordingState(
     val config: RecordingConfig = RecordingConfig(),
     val channelLevels: List<Float> = emptyList(),
     val recordingDurationMs: Long = 0L,
-    val recordings: List<RecordingItem> = emptyList()
+    val recordings: List<RecordingItem> = emptyList(),
+    val isPlaying: Boolean = false,
+    val currentPlayingId: String? = null
 )

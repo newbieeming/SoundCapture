@@ -1,10 +1,14 @@
 package com.newbieeming.soundcapture.presentation
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFormat
+import android.media.AudioTrack
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.newbieeming.soundcapture.R
 import com.newbieeming.soundcapture.data.model.RecordingConfig
+import com.newbieeming.soundcapture.data.model.RecordingItem
 import com.newbieeming.soundcapture.data.repository.RecordingRepository
 import com.newbieeming.soundcapture.data.repository.SettingsRepository
 import com.newbieeming.soundcapture.domain.AudioRecorder
@@ -26,6 +30,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.FileInputStream
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -50,6 +56,8 @@ class RecordingViewModel @Inject constructor(
     private var durationJob: Job? = null
     private var currentOutputFilePath: String? = null
     private var recordingStartTimeMs: Long = 0L
+    private var playbackJob: Job? = null
+    private var audioTrack: AudioTrack? = null
 
     init {
         observeRecordingConfig()
@@ -65,6 +73,8 @@ class RecordingViewModel @Inject constructor(
             is RecordingIntent.DeleteRecording -> deleteRecording(intent.id)
             is RecordingIntent.RenameRecording -> renameRecording(intent.id, intent.newName)
             is RecordingIntent.LoadRecordings -> repository.loadRecordings()
+            is RecordingIntent.PlayRecording -> playRecording(intent.recording)
+            is RecordingIntent.StopPlayback -> stopPlayback()
         }
     }
 
@@ -152,6 +162,10 @@ class RecordingViewModel @Inject constructor(
     }
 
     private fun deleteRecording(id: String) {
+        // 如果正在播放该录音，先停止播放
+        if (_state.value.isPlaying && _state.value.currentPlayingId == id) {
+            stopPlayback()
+        }
         viewModelScope.launch {
             val deleted = repository.deleteRecording(id)
             if (deleted) {
@@ -170,6 +184,114 @@ class RecordingViewModel @Inject constructor(
             } else {
                 _effect.emit(RecordingEffect.ShowError(context.getString(R.string.msg_recording_rename_failed)))
             }
+        }
+    }
+
+    private fun playRecording(recording: RecordingItem) {
+        // 如果当前正在播放同一个录音，则停止
+        if (_state.value.isPlaying && _state.value.currentPlayingId == recording.id) {
+            stopPlayback()
+            return
+        }
+        // 如果正在播放其他录音，先停止
+        if (_state.value.isPlaying) {
+            stopPlayback()
+        }
+
+        playbackJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val config = _state.value.config
+                val channelCount = config.waveformChannelCount
+                val channelIndexMask = RecordingRepository.channelIndexMaskFromCount(channelCount)
+                val channelMask = when (channelCount) {
+                    1 -> AudioFormat.CHANNEL_OUT_MONO
+                    2 -> AudioFormat.CHANNEL_OUT_STEREO
+                    else -> AudioFormat.CHANNEL_OUT_STEREO
+                }
+                val bufferSize = AudioTrack.getMinBufferSize(
+                    config.sampleRate,
+                    channelMask,
+                    config.audioFormat
+                )
+                if (bufferSize == AudioTrack.ERROR || bufferSize == AudioTrack.ERROR_BAD_VALUE) {
+                    withContext(Dispatchers.Main) {
+                        _effect.emit(RecordingEffect.ShowError("无法初始化音频播放"))
+                    }
+                    return@launch
+                }
+
+                val track = AudioTrack.Builder()
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build()
+                    )
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setEncoding(config.audioFormat)
+                            .setSampleRate(config.sampleRate)
+                            .setChannelIndexMask(channelIndexMask)
+                            .build()
+                    )
+                    .setBufferSizeInBytes(bufferSize)
+                    .setTransferMode(AudioTrack.MODE_STREAM)
+                    .build()
+
+                audioTrack = track
+                withContext(Dispatchers.Main) {
+                    _state.update {
+                        it.copy(isPlaying = true, currentPlayingId = recording.id)
+                    }
+                }
+
+                try {
+                    track.play()
+                    val buffer = ByteArray(bufferSize)
+                    FileInputStream(recording.filePath).use { fis ->
+                        var bytesRead: Int
+                        while (isActive) {
+                            bytesRead = fis.read(buffer)
+                            if (bytesRead == -1) break
+                            track.write(buffer, 0, bytesRead)
+                        }
+                    }
+                } finally {
+                    runCatching {
+                        track.stop()
+                        track.release()
+                    }
+                    audioTrack = null
+                    withContext(Dispatchers.Main) {
+                        _state.update {
+                            it.copy(isPlaying = false, currentPlayingId = null)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _effect.emit(
+                        RecordingEffect.ShowError(
+                            e.message ?: "播放失败"
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private fun stopPlayback() {
+        playbackJob?.cancel()
+        playbackJob = null
+        audioTrack?.let { track ->
+            runCatching {
+                track.stop()
+                track.release()
+            }
+        }
+        audioTrack = null
+        _state.update {
+            it.copy(isPlaying = false, currentPlayingId = null)
         }
     }
 

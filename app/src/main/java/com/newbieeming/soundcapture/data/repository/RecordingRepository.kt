@@ -87,6 +87,13 @@ class RecordingRepository @Inject constructor() {
                 else -> "F$audioFormat"
             }
         }
+
+        /**
+         * 根据通道数生成 AudioTrack 的 channelIndexMask
+         */
+        fun channelIndexMaskFromCount(channelCount: Int): Int {
+            return (1 shl channelCount) - 1
+        }
     }
 
     private val recordingsDir: File
@@ -123,7 +130,8 @@ class RecordingRepository @Inject constructor() {
                         duration = 0L,
                         timestamp = file.lastModified(),
                         sampleRate = 44100,
-                        channelConfig = 1
+                        channelConfig = 1,
+                        fileSize = file.length()
                     )
                 } else {
                     null

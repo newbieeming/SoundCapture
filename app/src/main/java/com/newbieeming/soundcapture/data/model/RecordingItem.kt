@@ -7,5 +7,6 @@ data class RecordingItem(
     val duration: Long,
     val timestamp: Long,
     val sampleRate: Int,
-    val channelConfig: Int
+    val channelConfig: Int,
+    val fileSize: Long = 0L
 )

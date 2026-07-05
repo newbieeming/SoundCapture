@@ -173,7 +173,7 @@ fun RecordingScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(12.dp),
+                                .padding(6.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             // 录音列表
@@ -217,6 +217,16 @@ fun RecordingScreen(
                                                         newName
                                                     )
                                                 )
+                                            },
+                                            isPlaying = state.isPlaying && state.currentPlayingId == recording.id,
+                                            onPlay = {
+                                                if (state.isPlaying && state.currentPlayingId == recording.id) {
+                                                    viewModel.handleIntent(RecordingIntent.StopPlayback)
+                                                } else {
+                                                    viewModel.handleIntent(
+                                                        RecordingIntent.PlayRecording(recording)
+                                                    )
+                                                }
                                             }
                                         )
                                     }

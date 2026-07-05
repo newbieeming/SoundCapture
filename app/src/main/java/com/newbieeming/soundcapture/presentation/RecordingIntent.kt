@@ -1,6 +1,7 @@
 package com.newbieeming.soundcapture.presentation
 
 import com.newbieeming.soundcapture.data.model.RecordingConfig
+import com.newbieeming.soundcapture.data.model.RecordingItem
 
 sealed class RecordingIntent {
     object StartRecording : RecordingIntent()
@@ -9,4 +10,6 @@ sealed class RecordingIntent {
     data class DeleteRecording(val id: String) : RecordingIntent()
     data class RenameRecording(val id: String, val newName: String) : RecordingIntent()
     object LoadRecordings : RecordingIntent()
+    data class PlayRecording(val recording: RecordingItem) : RecordingIntent()
+    object StopPlayback : RecordingIntent()
 }

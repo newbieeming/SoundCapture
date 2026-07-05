@@ -42,6 +42,8 @@
 
     <string name="cd_rename">Rename</string>
     <string name="cd_delete">Delete</string>
+    <string name="cd_play">Play</string>
+    <string name="cd_stop">Stop</string>
     <string name="dialog_rename_recording_title">Rename Recording</string>
     <string name="label_new_name">New Name</string>
     <string name="section_recordings">Recordings</string>

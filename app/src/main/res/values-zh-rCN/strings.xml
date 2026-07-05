@@ -42,6 +42,8 @@
 
     <string name="cd_rename">重命名</string>
     <string name="cd_delete">删除</string>
+    <string name="cd_play">播放</string>
+    <string name="cd_stop">停止</string>
     <string name="dialog_rename_recording_title">重命名录音</string>
     <string name="label_new_name">新名称</string>
     <string name="section_recordings">录音列表</string>
