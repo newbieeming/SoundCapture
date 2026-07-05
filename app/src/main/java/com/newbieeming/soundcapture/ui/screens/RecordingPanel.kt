@@ -166,7 +166,7 @@ internal fun RecordingDuration(
             fontFamily = FontFamily.Serif
         ),
         color = if (isRecording) {
-            MaterialTheme.colorScheme.error
+            MaterialTheme.colorScheme.primary
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
         },

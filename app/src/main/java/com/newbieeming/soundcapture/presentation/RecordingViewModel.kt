@@ -13,11 +13,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -38,8 +40,11 @@ class RecordingViewModel @Inject constructor(
     private val _state = MutableStateFlow(RecordingState())
     val state = _state.asStateFlow()
 
-    private val _effect = MutableSharedFlow<RecordingEffect>()
-    val effect = _effect.asSharedFlow()
+    private val _effect = MutableSharedFlow<RecordingEffect>(
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val effect = _effect.asSharedFlow().distinctUntilChanged()
 
     private var recordingJob: Job? = null
     private var durationJob: Job? = null

@@ -11,6 +11,7 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -63,6 +64,7 @@ import com.newbieeming.soundcapture.presentation.RecordingIntent
 import com.newbieeming.soundcapture.presentation.RecordingViewModel
 import com.newbieeming.soundcapture.ui.components.ConfigDialog
 import com.newbieeming.soundcapture.ui.components.RecordingListItem
+import kotlinx.coroutines.flow.conflate
 
 @RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
@@ -163,9 +165,11 @@ fun RecordingScreen(
                         state = state
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Card(modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(0.35f)) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(0.35f)
+                    ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -182,14 +186,16 @@ fun RecordingScreen(
                             )
 
                             if (state.recordings.isEmpty()) {
-                                Text(
-                                    text = stringResource(id = R.string.msg_no_recordings),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(top = 8.dp)
-                                )
+                                Box(
+                                    modifier = Modifier.weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(id = R.string.msg_no_recordings),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             } else {
                                 LazyColumn(
                                     modifier = Modifier.weight(1f)
@@ -197,8 +203,21 @@ fun RecordingScreen(
                                     items(state.recordings) { recording ->
                                         RecordingListItem(
                                             recording = recording,
-                                            onDelete = { viewModel.handleIntent(RecordingIntent.DeleteRecording(recording.id)) },
-                                            onRename = { newName -> viewModel.handleIntent(RecordingIntent.RenameRecording(recording.id, newName)) }
+                                            onDelete = {
+                                                viewModel.handleIntent(
+                                                    RecordingIntent.DeleteRecording(
+                                                        recording.id
+                                                    )
+                                                )
+                                            },
+                                            onRename = { newName ->
+                                                viewModel.handleIntent(
+                                                    RecordingIntent.RenameRecording(
+                                                        recording.id,
+                                                        newName
+                                                    )
+                                                )
+                                            }
                                         )
                                     }
                                 }
@@ -254,7 +273,8 @@ private fun ObserveEffects(
 ) {
     val context = LocalContext.current
     LaunchedEffect(viewModel, snackbarHostState) {
-        viewModel.effect.collect { effect ->
+        viewModel.effect.conflate().collect { effect ->
+            snackbarHostState.currentSnackbarData?.dismiss()
             when (effect) {
                 is RecordingEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
