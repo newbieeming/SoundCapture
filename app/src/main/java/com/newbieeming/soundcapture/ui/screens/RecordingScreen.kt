@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -28,6 +30,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -59,6 +62,7 @@ import com.newbieeming.soundcapture.presentation.RecordingEffect
 import com.newbieeming.soundcapture.presentation.RecordingIntent
 import com.newbieeming.soundcapture.presentation.RecordingViewModel
 import com.newbieeming.soundcapture.ui.components.ConfigDialog
+import com.newbieeming.soundcapture.ui.components.RecordingListItem
 
 @RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
@@ -155,32 +159,50 @@ fun RecordingScreen(
                     RecordingPanel(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(0.75f),
+                            .weight(0.65f),
                         state = state
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Card(modifier = Modifier
                         .fillMaxHeight()
-                        .weight(0.25f)) {
+                        .weight(0.35f)) {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            // 录音参数展示 - 顶部
-                            RecordingParamsInfo(config = state.config)
-
-                            // 中间弹性空间
-                            Spacer(modifier = Modifier.weight(1f))
-
-                            // 录制时长
-                            RecordingDuration(
-                                isRecording = state.isRecording,
-                                durationMs = state.recordingDurationMs
+                            // 录音列表
+                            Text(
+                                text = stringResource(id = R.string.section_recordings),
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 4.dp)
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            if (state.recordings.isEmpty()) {
+                                Text(
+                                    text = stringResource(id = R.string.msg_no_recordings),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(top = 8.dp)
+                                )
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    items(state.recordings) { recording ->
+                                        RecordingListItem(
+                                            recording = recording,
+                                            onDelete = { viewModel.handleIntent(RecordingIntent.DeleteRecording(recording.id)) },
+                                            onRename = { newName -> viewModel.handleIntent(RecordingIntent.RenameRecording(recording.id, newName)) }
+                                        )
+                                    }
+                                }
+                            }
 
                             // 录音按钮 - 靠近底部
                             RecordingControlButton(
@@ -199,11 +221,11 @@ fun RecordingScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Settings,
-                                    contentDescription = stringResource(id = R.string.cd_settings),
+                                    contentDescription = stringResource(id = R.string.btn_param_settings),
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(id = R.string.cd_settings))
+                                Text(stringResource(id = R.string.btn_param_settings))
                             }
                         }
                     }

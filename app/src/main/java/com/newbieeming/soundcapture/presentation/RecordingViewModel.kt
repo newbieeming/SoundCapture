@@ -48,6 +48,8 @@ class RecordingViewModel @Inject constructor(
 
     init {
         observeRecordingConfig()
+        observeRecordings()
+        repository.loadRecordings()
     }
 
     fun handleIntent(intent: RecordingIntent) {
@@ -55,6 +57,9 @@ class RecordingViewModel @Inject constructor(
             is RecordingIntent.StartRecording -> startRecording()
             is RecordingIntent.StopRecording -> stopRecording()
             is RecordingIntent.UpdateConfig -> updateConfig(intent.config)
+            is RecordingIntent.DeleteRecording -> deleteRecording(intent.id)
+            is RecordingIntent.RenameRecording -> renameRecording(intent.id, intent.newName)
+            is RecordingIntent.LoadRecordings -> repository.loadRecordings()
         }
     }
 
@@ -110,6 +115,7 @@ class RecordingViewModel @Inject constructor(
             val filePath = currentOutputFilePath
             if (filePath != null) {
                 _effect.emit(RecordingEffect.ShowSaveSuccess(filePath))
+                repository.loadRecordings()
             } else {
                 _effect.emit(RecordingEffect.ShowSaveFailure)
             }
@@ -130,6 +136,36 @@ class RecordingViewModel @Inject constructor(
                 _state.update { it.copy(config = config) }
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun observeRecordings() {
+        repository.recordings
+            .onEach { recordings ->
+                _state.update { it.copy(recordings = recordings) }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun deleteRecording(id: String) {
+        viewModelScope.launch {
+            val deleted = repository.deleteRecording(id)
+            if (deleted) {
+                _effect.emit(RecordingEffect.ShowSuccess(context.getString(R.string.msg_recording_deleted)))
+            } else {
+                _effect.emit(RecordingEffect.ShowError(context.getString(R.string.msg_recording_delete_failed)))
+            }
+        }
+    }
+
+    private fun renameRecording(id: String, newName: String) {
+        viewModelScope.launch {
+            val renamed = repository.renameRecording(id, newName)
+            if (renamed) {
+                _effect.emit(RecordingEffect.ShowSuccess(context.getString(R.string.msg_recording_renamed)))
+            } else {
+                _effect.emit(RecordingEffect.ShowError(context.getString(R.string.msg_recording_rename_failed)))
+            }
+        }
     }
 
 }

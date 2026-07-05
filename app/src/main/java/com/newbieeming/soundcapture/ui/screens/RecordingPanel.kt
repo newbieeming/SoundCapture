@@ -2,13 +2,14 @@ package com.newbieeming.soundcapture.ui.screens
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,12 +43,27 @@ internal fun RecordingPanel(
         modifier = modifier
             .fillMaxWidth()
     ) {
-        WaveformView(
-            channelLevels = state.channelLevels,
-            modifier = Modifier.fillMaxSize(),
-            channelCount = state.config.waveformChannelCount,
-            isActive = state.isRecording
-        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            WaveformView(
+                channelLevels = state.channelLevels,
+                modifier = Modifier.fillMaxSize(),
+                channelCount = state.config.waveformChannelCount,
+                isActive = state.isRecording
+            )
+            RecordingParamsInfo(
+                config = state.config,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+            )
+            RecordingDuration(
+                isRecording = state.isRecording,
+                durationMs = state.recordingDurationMs,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
+            )
+        }
     }
 }
 
@@ -93,7 +109,10 @@ internal fun RecordingControlButton(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun RecordingParamsInfo(config: RecordingConfig) {
+internal fun RecordingParamsInfo(
+    config: RecordingConfig,
+    modifier: Modifier = Modifier
+) {
     val params = listOf(
         RecordingRepository.sampleRateToken(config.sampleRate),
         RecordingRepository.audioFormatToken(config.audioFormat),
@@ -103,14 +122,9 @@ internal fun RecordingParamsInfo(config: RecordingConfig) {
     )
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier,
+        horizontalAlignment = Alignment.Start
     ) {
-        Text(
-            text = stringResource(id = R.string.label_recording_params),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(6.dp))
         FlowRow(
             horizontalArrangement = Arrangement.Center,
             verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -119,13 +133,13 @@ internal fun RecordingParamsInfo(config: RecordingConfig) {
                 Text(
                     text = param,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.primary
                 )
                 if (index < params.lastIndex) {
                     Text(
                         text = " · ",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -137,7 +151,8 @@ internal fun RecordingParamsInfo(config: RecordingConfig) {
 @Composable
 internal fun RecordingDuration(
     isRecording: Boolean,
-    durationMs: Long
+    durationMs: Long,
+    modifier: Modifier = Modifier
 ) {
     val totalSeconds = (durationMs / 1000).toInt()
     val minutes = totalSeconds / 60
@@ -154,6 +169,7 @@ internal fun RecordingDuration(
             MaterialTheme.colorScheme.error
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-        }
+        },
+        modifier = modifier
     )
 }

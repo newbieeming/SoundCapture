@@ -6,9 +6,8 @@
     <string name="btn_confirm">Confirm</string>
     <string name="btn_cancel">Cancel</string>
 
-    <string name="cd_settings">Settings</string>
+    <string name="btn_param_settings">Params Settings</string>
 
-    <string name="label_recording_params">Recording Params</string>
     <string name="config_mono">Mono</string>
     <string name="config_stereo">Stereo</string>
 
@@ -40,4 +39,15 @@
     <string name="msg_save_success">File saved: %1$s</string>
     <string name="msg_save_failed">Save failed</string>
     <string name="btn_go_authorize">Authorize</string>
+
+    <string name="cd_rename">Rename</string>
+    <string name="cd_delete">Delete</string>
+    <string name="dialog_rename_recording_title">Rename Recording</string>
+    <string name="label_new_name">New Name</string>
+    <string name="section_recordings">Recordings</string>
+    <string name="msg_no_recordings">No recordings yet</string>
+    <string name="msg_recording_deleted">Recording deleted</string>
+    <string name="msg_recording_delete_failed">Delete failed</string>
+    <string name="msg_recording_renamed">Recording renamed</string>
+    <string name="msg_recording_rename_failed">Rename failed</string>
 </resources>
