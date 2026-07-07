@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.dp
 
 private const val LEVEL_MIN = 0f
 private const val LEVEL_MAX = 1f
+private const val MAX_SAMPLES_PER_CHANNEL = 500
 
 @Composable
 fun WaveformView(
@@ -36,7 +38,6 @@ fun WaveformView(
     val barWidthPx = with(density) { barWidth.toPx() }
     val spacingPx = with(density) { (barWidth + barGap).toPx() }
 
-    // 新录音开始时清除旧数据
     LaunchedEffect(isActive) {
         if (isActive && !wasActive.value) {
             channelSamples.clear()
@@ -46,25 +47,7 @@ fun WaveformView(
 
     LaunchedEffect(channelLevels, isActive, channelCount) {
         if (!isActive || channelLevels.isEmpty()) return@LaunchedEffect
-
-        val safeChannelCount = channelCount.coerceIn(1, 8)
-        while (channelSamples.size < safeChannelCount) {
-            channelSamples.add(mutableStateListOf())
-        }
-        while (channelSamples.size > safeChannelCount) {
-            channelSamples.removeAt(channelSamples.lastIndex)
-        }
-
-        for (channelIndex in 0 until safeChannelCount) {
-            val level = (channelLevels.getOrNull(channelIndex) ?: 0f)
-                .coerceIn(LEVEL_MIN, LEVEL_MAX)
-            val samples = channelSamples[channelIndex]
-            samples.add(level)
-            // 保留足够数据，绘制时按实际宽度裁剪
-            if (samples.size > 500) {
-                samples.removeAt(0)
-            }
-        }
+        updateChannelSamples(channelSamples, channelLevels, channelCount)
     }
 
     Canvas(modifier = modifier.fillMaxSize()) {
@@ -75,6 +58,33 @@ fun WaveformView(
             barWidthPx = barWidthPx,
             spacingPx = spacingPx
         )
+    }
+}
+
+private fun updateChannelSamples(
+    channelSamples: SnapshotStateList<MutableList<Float>>,
+    channelLevels: List<Float>,
+    channelCount: Int
+) {
+    val safeChannelCount = channelCount.coerceIn(1, 8)
+
+    // 调整通道数量
+    while (channelSamples.size < safeChannelCount) {
+        channelSamples.add(mutableStateListOf())
+    }
+    while (channelSamples.size > safeChannelCount) {
+        channelSamples.removeAt(channelSamples.lastIndex)
+    }
+
+    // 追加各通道新采样
+    for (channelIndex in 0 until safeChannelCount) {
+        val level = (channelLevels.getOrNull(channelIndex) ?: 0f)
+            .coerceIn(LEVEL_MIN, LEVEL_MAX)
+        val samples = channelSamples[channelIndex]
+        samples.add(level)
+        if (samples.size > MAX_SAMPLES_PER_CHANNEL) {
+            samples.removeAt(0)
+        }
     }
 }
 
@@ -90,7 +100,6 @@ private fun DrawScope.drawWaveformBars(
     val safeChannelCount = channelSamples.size.coerceIn(1, 8)
     val laneHeight = size.height / safeChannelCount
     val maxHalfHeight = laneHeight / 2f
-    // 容器能放下多少根柱子
     val maxBars = (size.width / spacingPx).toInt()
 
     for (channelIndex in 0 until safeChannelCount) {
@@ -103,7 +112,6 @@ private fun DrawScope.drawWaveformBars(
         val startIndex = samples.size - count
 
         for (i in 0 until count) {
-            // 从左到右绘制，最左边是最旧的可见数据，最右边是最新的
             val x = i * spacingPx + barWidthPx / 2f
             val amplitude = samples[startIndex + i].coerceIn(LEVEL_MIN, LEVEL_MAX)
             val lineHeight = maxHalfHeight * amplitude

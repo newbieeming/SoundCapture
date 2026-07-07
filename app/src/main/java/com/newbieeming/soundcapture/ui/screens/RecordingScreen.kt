@@ -9,10 +9,12 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -41,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,12 +62,82 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.newbieeming.soundcapture.R
+import com.newbieeming.soundcapture.data.model.RecordingItem
 import com.newbieeming.soundcapture.presentation.RecordingEffect
 import com.newbieeming.soundcapture.presentation.RecordingIntent
+import com.newbieeming.soundcapture.presentation.RecordingState
 import com.newbieeming.soundcapture.presentation.RecordingViewModel
 import com.newbieeming.soundcapture.ui.components.ConfigDialog
 import com.newbieeming.soundcapture.ui.components.RecordingListItem
 import kotlinx.coroutines.flow.conflate
+
+@Stable
+private data class RecordingPermissionState(
+    val hasRecordPermission: Boolean,
+    val isRecordPermanentlyDenied: Boolean,
+    val needsFilePermission: Boolean,
+    val onRequestRecordPermission: () -> Unit,
+    val onOpenAppSettings: () -> Unit,
+    val onOpenFileSettings: () -> Unit
+)
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+private fun rememberRecordingPermissionState(
+    onOpenFileSettings: () -> Unit,
+    onOpenAppSettings: () -> Unit
+): RecordingPermissionState {
+    var hasFilePermission by remember {
+        mutableStateOf(!requiresAllFilesAccessPermission() || Environment.isExternalStorageManager())
+    }
+    var hasRequestedRecordPermission by remember { mutableStateOf(false) }
+    var hasAutoRequested by remember { mutableStateOf(false) }
+
+    // 每次页面回到前台时重新检查文件权限
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasFilePermission =
+                    !requiresAllFilesAccessPermission() || Environment.isExternalStorageManager()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val recordPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasRequestedRecordPermission = true
+        if (permissions.values.all { it }) {
+            hasRequestedRecordPermission = false
+        }
+    }
+
+    val permissionsState = rememberMultiplePermissionsState(permissions = runtimePermissions())
+    val hasRecordPermission = permissionsState.allPermissionsGranted
+    val isPermanentlyDenied = hasRequestedRecordPermission
+            && !hasRecordPermission
+            && !permissionsState.shouldShowRationale
+
+    // 首次进入权限页面且未永久拒绝时，自动请求一次麦克风权限
+    LaunchedEffect(hasRecordPermission, isPermanentlyDenied) {
+        if (!hasRecordPermission && !isPermanentlyDenied && !hasAutoRequested) {
+            hasAutoRequested = true
+            recordPermissionLauncher.launch(runtimePermissions().toTypedArray())
+        }
+    }
+
+    return RecordingPermissionState(
+        hasRecordPermission = hasRecordPermission,
+        isRecordPermanentlyDenied = isPermanentlyDenied,
+        needsFilePermission = !hasFilePermission,
+        onRequestRecordPermission = { recordPermissionLauncher.launch(runtimePermissions().toTypedArray()) },
+        onOpenAppSettings = onOpenAppSettings,
+        onOpenFileSettings = onOpenFileSettings
+    )
+}
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -75,46 +148,14 @@ fun RecordingScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showConfigDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    // 文件权限状态
-    var hasFilePermission by remember {
-        mutableStateOf(!requiresAllFilesAccessPermission() || Environment.isExternalStorageManager())
-    }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                // 每次页面回到前台时重新检查文件权限
-                hasFilePermission =
-                    !requiresAllFilesAccessPermission() || Environment.isExternalStorageManager()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
+
     val allFilesAccessLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { }
 
-    // 追踪是否已经请求过录音权限（用于判断是否被永久拒绝）
-    var hasRequestedRecordPermission by remember { mutableStateOf(false) }
-    // 是否已经自动请求过一次权限
-    var hasAutoRequested by remember { mutableStateOf(false) }
-
-    val recordPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        // 请求回调：标记已请求过，权限未全部授予时
-        hasRequestedRecordPermission = true
-        // 如果授权成功，重置标记
-        if (permissions.values.all { it }) {
-            hasRequestedRecordPermission = false
-        }
-    }
-
-    val permissionsState = rememberMultiplePermissionsState(
-        permissions = runtimePermissions()
+    val permissionState = rememberRecordingPermissionState(
+        onOpenFileSettings = { allFilesAccessLauncher.launch(allFilesAccessIntent(context)) },
+        onOpenAppSettings = { context.openAppSettings() }
     )
 
     ObserveEffects(
@@ -123,28 +164,14 @@ fun RecordingScreen(
         allFilesAccessLauncher = allFilesAccessLauncher
     )
 
-    val hasRecordPermission = permissionsState.allPermissionsGranted
-    val needsFilePermission = !hasFilePermission
-    val isRecordPermanentlyDenied = hasRequestedRecordPermission
-            && !hasRecordPermission
-            && !permissionsState.shouldShowRationale
-
-    // 首次进入权限页面且未永久拒绝时，自动请求一次麦克风权限
-    LaunchedEffect(hasRecordPermission, isRecordPermanentlyDenied) {
-        if (!hasRecordPermission && !isRecordPermanentlyDenied && !hasAutoRequested) {
-            hasAutoRequested = true
-            recordPermissionLauncher.launch(runtimePermissions().toTypedArray())
-        }
-    }
-
-    if (!hasRecordPermission || needsFilePermission) {
+    if (!permissionState.hasRecordPermission || permissionState.needsFilePermission) {
         PermissionScreen(
-            hasRecordPermission = hasRecordPermission,
-            isRecordPermanentlyDenied = isRecordPermanentlyDenied,
-            needsFilePermission = needsFilePermission,
-            onRequestRecordPermission = { recordPermissionLauncher.launch(runtimePermissions().toTypedArray()) },
-            onOpenAppSettings = { context.openAppSettings() },
-            onOpenFileSettings = { allFilesAccessLauncher.launch(allFilesAccessIntent(context)) }
+            hasRecordPermission = permissionState.hasRecordPermission,
+            isRecordPermanentlyDenied = permissionState.isRecordPermanentlyDenied,
+            needsFilePermission = permissionState.needsFilePermission,
+            onRequestRecordPermission = permissionState.onRequestRecordPermission,
+            onOpenAppSettings = permissionState.onOpenAppSettings,
+            onOpenFileSettings = permissionState.onOpenFileSettings
         )
     } else {
         Scaffold(
@@ -168,99 +195,14 @@ fun RecordingScreen(
                         state = state
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Card(
+                    RecordingsPanel(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .weight(0.35f)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(6.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            // 录音列表
-                            Text(
-                                text = stringResource(id = R.string.section_recordings),
-                                style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 4.dp)
-                            )
-
-                            if (state.recordings.isEmpty()) {
-                                Box(
-                                    modifier = Modifier.weight(1f),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = stringResource(id = R.string.msg_no_recordings),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            } else {
-                                LazyColumn(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    items(state.recordings) { recording ->
-                                        RecordingListItem(
-                                            recording = recording,
-                                            onDelete = {
-                                                viewModel.handleIntent(
-                                                    RecordingIntent.DeleteRecording(
-                                                        recording.id
-                                                    )
-                                                )
-                                            },
-                                            onRename = { newName ->
-                                                viewModel.handleIntent(
-                                                    RecordingIntent.RenameRecording(
-                                                        recording.id,
-                                                        newName
-                                                    )
-                                                )
-                                            },
-                                            isPlaying = state.isPlaying && state.currentPlayingId == recording.id,
-                                            onPlay = {
-                                                if (state.isPlaying && state.currentPlayingId == recording.id) {
-                                                    viewModel.handleIntent(RecordingIntent.StopPlayback)
-                                                } else {
-                                                    viewModel.handleIntent(
-                                                        RecordingIntent.PlayRecording(recording)
-                                                    )
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-
-                            // 录音按钮 - 靠近底部
-                            RecordingControlButton(
-                                isRecording = state.isRecording,
-                                onStart = { viewModel.handleIntent(RecordingIntent.StartRecording) },
-                                onStop = { viewModel.handleIntent(RecordingIntent.StopRecording) }
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // 设置按钮 - 最底部
-                            FilledTonalButton(
-                                onClick = { showConfigDialog = true },
-                                shape = RoundedCornerShape(32.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    Icons.Default.Settings,
-                                    contentDescription = stringResource(id = R.string.btn_param_settings),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(id = R.string.btn_param_settings))
-                            }
-                        }
-                    }
+                            .weight(0.35f),
+                        state = state,
+                        viewModel = viewModel,
+                        onSettingsClick = { showConfigDialog = true }
+                    )
                 }
             }
         }
@@ -279,10 +221,112 @@ fun RecordingScreen(
 }
 
 @Composable
+private fun RecordingsPanel(
+    state: RecordingState,
+    viewModel: RecordingViewModel,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(id = R.string.section_recordings),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp)
+            )
+
+            RecordingsList(
+                recordings = state.recordings,
+                isAnyPlaying = state.isPlaying,
+                currentPlayingId = state.currentPlayingId,
+                viewModel = viewModel
+            )
+
+            RecordingControlButton(
+                isRecording = state.isRecording,
+                onStart = { viewModel.handleIntent(RecordingIntent.StartRecording) },
+                onStop = { viewModel.handleIntent(RecordingIntent.StopRecording) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsButton(onClick = onSettingsClick)
+        }
+    }
+}
+
+@Composable
+private fun ColumnScope.RecordingsList(
+    recordings: List<RecordingItem>,
+    isAnyPlaying: Boolean,
+    currentPlayingId: String?,
+    viewModel: RecordingViewModel
+) {
+    if (recordings.isEmpty()) {
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(id = R.string.msg_no_recordings),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    } else {
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(recordings) { recording ->
+                RecordingListItem(
+                    recording = recording,
+                    onDelete = {
+                        viewModel.handleIntent(RecordingIntent.DeleteRecording(recording.id))
+                    },
+                    onRename = { newName ->
+                        viewModel.handleIntent(RecordingIntent.RenameRecording(recording.id, newName))
+                    },
+                    isPlaying = isAnyPlaying && currentPlayingId == recording.id,
+                    onPlay = {
+                        if (isAnyPlaying && currentPlayingId == recording.id) {
+                            viewModel.handleIntent(RecordingIntent.StopPlayback)
+                        } else {
+                            viewModel.handleIntent(RecordingIntent.PlayRecording(recording))
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsButton(onClick: () -> Unit) {
+    FilledTonalButton(
+        onClick = onClick,
+        shape = RoundedCornerShape(32.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            Icons.Default.Settings,
+            contentDescription = stringResource(id = R.string.btn_param_settings),
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(stringResource(id = R.string.btn_param_settings))
+    }
+}
+
+@Composable
 private fun ObserveEffects(
     viewModel: RecordingViewModel,
     snackbarHostState: SnackbarHostState,
-    allFilesAccessLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
+    allFilesAccessLauncher: ActivityResultLauncher<Intent>
 ) {
     val context = LocalContext.current
     LaunchedEffect(viewModel, snackbarHostState) {

@@ -26,8 +26,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.newbieeming.soundcapture.R
 import com.newbieeming.soundcapture.data.model.RecordingItem
@@ -71,41 +74,26 @@ fun RecordingListItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(
-                onClick = onPlay,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
-                    contentDescription = stringResource(id = if (isPlaying) R.string.cd_stop else R.string.cd_play),
-                    modifier = Modifier.size(16.dp),
-                    tint = if (isPlaying) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                )
-            }
+            ActionIconButton(
+                icon = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
+                contentDescription = stringResource(id = if (isPlaying) R.string.cd_stop else R.string.cd_play),
+                tint = if (isPlaying) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                onClick = onPlay
+            )
             Spacer(modifier = Modifier.width(4.dp))
-            IconButton(
-                onClick = { showRenameDialog = true },
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = stringResource(id = R.string.cd_rename),
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.secondary
-                )
-            }
+            ActionIconButton(
+                icon = Icons.Default.Edit,
+                contentDescription = stringResource(id = R.string.cd_rename),
+                tint = MaterialTheme.colorScheme.secondary,
+                onClick = { showRenameDialog = true }
+            )
             Spacer(modifier = Modifier.width(4.dp))
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(id = R.string.cd_delete),
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
+            ActionIconButton(
+                icon = Icons.Default.Delete,
+                contentDescription = stringResource(id = R.string.cd_delete),
+                tint = MaterialTheme.colorScheme.error,
+                onClick = onDelete
+            )
         }
     }
 
@@ -117,6 +105,25 @@ fun RecordingListItem(
                 onRename(newName)
                 showRenameDialog = false
             }
+        )
+    }
+}
+
+@Composable
+private fun ActionIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    tint: Color,
+    onClick: () -> Unit,
+    size: Dp = 28.dp,
+    iconSize: Dp = 16.dp
+) {
+    IconButton(onClick = onClick, modifier = Modifier.size(size)) {
+        Icon(
+            icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(iconSize),
+            tint = tint
         )
     }
 }
