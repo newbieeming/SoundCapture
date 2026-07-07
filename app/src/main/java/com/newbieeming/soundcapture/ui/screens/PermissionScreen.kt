@@ -51,6 +51,7 @@ internal fun PermissionScreen(
     Row(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -120,7 +121,8 @@ private fun PermissionIllustration() {
     Text(
         text = stringResource(id = R.string.permission_title),
         style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onBackground
     )
     Spacer(modifier = Modifier.height(12.dp))
     Text(
