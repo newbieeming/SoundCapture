@@ -10,7 +10,6 @@ import android.os.Environment
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,7 +66,6 @@ import com.newbieeming.soundcapture.ui.components.ConfigDialog
 import com.newbieeming.soundcapture.ui.components.RecordingListItem
 import kotlinx.coroutines.flow.conflate
 
-@RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RecordingScreen(

@@ -3,7 +3,6 @@ package com.newbieeming.soundcapture.ui.components
 import android.media.AudioFormat
 import android.media.MediaRecorder
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -218,7 +217,6 @@ fun WaveformChannelDropdown(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AudioFormatDropdown(

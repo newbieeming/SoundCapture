@@ -1,7 +1,5 @@
 package com.newbieeming.soundcapture.ui.components
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.newbieeming.soundcapture.R
 import com.newbieeming.soundcapture.data.model.RecordingConfig
 
-@RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun ConfigDialog(
     currentConfig: RecordingConfig,
